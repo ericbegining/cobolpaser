@@ -42,10 +42,9 @@
 		</dependency>
 
 <dependency>
-    <groupId>net.sf</groupId>
+    <groupId>net.sf.cb2xml</groupId>
     <artifactId>cb2xml</artifactId>
     <version>1.01.1</version>
-    <scope>compile</scope>
 </dependency>
 	</dependencies>
 
