@@ -5,7 +5,7 @@ import net.sf.cb2xml.ICb2XmlBuilder;
 import net.sf.cb2xml.def.Cb2xmlConstants;
 import net.sf.cb2xml.def.ICopybook;
 import net.sf.cb2xml.def.IItem;
-
+import net.sf.cb2xml.def.Cb2xmlConstants; 
 import org.springframework.web.bind.annotation.*;
 
 import java.io.Console;
@@ -17,7 +17,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
+@CrossOrigin(origins = "*") // 允許任何來源的程式呼叫
 @RestController
 @RequestMapping("/api")
 public class CobolController {
@@ -170,9 +170,12 @@ public class CobolController {
 
     }
 
-    @PostMapping("/parse-treeViewGridInDetail")
+    // @PostMapping(value="/parse-treeViewGridInDetail", consumes = "application/json")
+     @PostMapping(value="/parse-treeViewGridInDetail")
     public CopybookResponse parseForTreeViewGridInDetail(@RequestBody String content) {
     try {
+        // 1. 根據字串選擇對應的 CblLineFormat
+            // Cb2xmlConstants.CblLineFormat format = Cb2xmlConstants CblLineFormat.valueOf(request.lineFormat.toUpperCase());
 
         ICb2XmlBuilder cb2= Cb2Xml3.newBuilder(new StringReader(content), "temp");
         cb2.setCobolLineFormat(Cb2xmlConstants.FREE_FORMAT);
