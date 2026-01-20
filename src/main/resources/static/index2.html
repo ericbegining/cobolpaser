@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>COBOL Structure Viewer</title>
+    <link href="https://unpkg.com/tabulator-tables/dist/css/tabulator.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/tabulator-tables/dist/js/tabulator.min.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        textarea { width: 100%; height: 150px; margin-bottom: 10px; }
+        #example-table { margin-top: 20px; }
+
+        /* 讓樹狀結構展開的圖標更清楚 */
+.tabulator-tree-level-0 { font-weight: bold; color: #2c3e50; }
+.tabulator-cell { border-right: 1px solid #eee; }
+    </style>
+</head>
+<body>
+    <h2>COBOL Copybook 解析器</h2>
+    <textarea id="cobolInput" placeholder="在此貼上 COBOL Copybook 代碼..."></textarea>
+    <br>
+    <button onclick="parseCobol()">解析並顯示結構</button>
+
+    <div id="example-table"></div>
+
+    <script>
+        var table = new Tabulator("#example-table", {
+    height: "500px",
+    dataTree: true, // 啟用樹狀結構
+    dataTreeChildField: "_children", // 指定子節點欄位
+    dataTreeStartExpanded: true, // 預設展開
+    layout: "fitColumns",
+    columns: [
+        {title: "Level", field: "level", width: 100},
+        {title: "Field Name", field: "name", width: 300, responsive: 0}, // 點擊這裡會展開/收合
+        {title: "Position", field: "position", hozAlign: "right", width: 120},
+        {title: "Length", field: "length", hozAlign: "right", width: 120},
+        {title: "Picture", field: "picture", width: 150}
+    ],
+});
+
+        function parseCobol() {
+    var content = document.getElementById("cobolInput").value;
+    fetch('/api/parse-treeview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: content
+    })
+    .then(response => response.json())
+    .then(data => {
+        table.setData(data);
+    });
+}
+    </script>
+</body>
+</html>
