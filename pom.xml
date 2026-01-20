@@ -41,10 +41,10 @@
 			<scope>test</scope>
 		</dependency>
 
-		<dependency>
-  <groupId>net.sf</groupId>
-  <artifactId>cb2xml</artifactId>
-  <version>1.01.08</version>
+<dependency>
+    <groupId>net.sf.cb2xml</groupId>
+    <artifactId>cb2xml</artifactId>
+    <version>1.01.1</version>
 </dependency>
 	</dependencies>
 
