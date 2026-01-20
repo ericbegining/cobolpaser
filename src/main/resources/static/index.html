@@ -1,6 +1,7 @@
 <!DOCTYPE html>
-<html>
+<html >
 <head>
+    <meta charset="utf-8" />
     <title>COBOL Structure Viewer</title>
     <link href="https://unpkg.com/tabulator-tables/dist/css/tabulator.min.css" rel="stylesheet">
     <script src="https://unpkg.com/tabulator-tables/dist/js/tabulator.min.js"></script>
@@ -8,41 +9,138 @@
         body { font-family: sans-serif; padding: 20px; }
         textarea { width: 100%; height: 150px; margin-bottom: 10px; }
         #example-table { margin-top: 20px; }
+
+        /* 讓樹狀結構展開的圖標更清楚 */
+.tabulator-tree-level-0 { font-weight: bold; color: #2c3e50; }
+.tabulator-cell { border-right: 1px solid #eee; }
     </style>
 </head>
 <body>
     <h2>COBOL Copybook 解析器</h2>
-    <textarea id="cobolInput" placeholder="在此貼上 COBOL Copybook 代碼..."></textarea>
+    <textarea id="cobolInput" placeholder="請輸入或貼上 COBOL Copybook ..."></textarea>
     <br>
     <button onclick="parseCobol()">解析並顯示結構</button>
-
+<div id="selection-info" style="margin-top: 20px; padding: 15px; background-color: #f9f9f9; border: 1px solid #ddd; border-radius: 5px;">
+    請選取兩個欄位來計算間距...
+</div>
     <div id="example-table"></div>
 
     <script>
-        var table = new Tabulator("#example-table", {
-            height: "400px",
-            layout: "fitColumns",
-            columns: [
-                {title: "Level", field: "level", width: 80},
-                {title: "Field Name", field: "name", width: 250},
-                {title: "Position", field: "position", hozAlign: "right"},
-                {title: "Length", field: "length", hozAlign: "right"},
-                {title: "Picture", field: "picture"}
-            ],
-        });
+    var table = new Tabulator("#example-table", {
+    height: "500px",
+    dataTree: true,
+    selectableRows:2,// 限制最多只能選取 2 行    
+    layout: "fitColumns",
+    
+    columns: [
+        {formatter:"rowSelection", titleFormatter:"rowSelection", hozAlign:"center", headerSort:false, width:50}, // 加入核取方塊
+        {title: "Level", field: "LevelString", width: 80},
+        {title: "Field Name", field: "FieldName", width: 250},
+        {title: "Position", field: "Position", hozAlign: "right"},
+        {title: "Length", field: "StorageLength", hozAlign: "right"},
+        {title: "Picture", field: "Picture"},
+        {title: "NumericClass", field: "NumericClass"},
+        {title: "DependingOn", field: "DependingOn"},
+        {title: "isFieldRedefined", field: "isFieldRedefined"},
+        {title: "isFieldRedefines", field: "isFieldRedefines"},
+        {title: "RedefinesFieldName", field: "RedefinesFieldName"},
+        {title: "Occurs", field: "Occurs"},
+        {title: "Usage", field: "Usage"},
+        {title: "Value", field: "Value"}
+
+    ],
+    
+});
+
+// Subscribe to the rowSelectionChanged event
+
+table.on("rowSelectionChanged", function(data, rows) {
+
+    console.log("Selection changed using table.on():", data.length);
+    document.getElementById("selection-info").innerHTML = calculateGap(data);
+    
+
+});
 
         function parseCobol() {
-            var content = document.getElementById("cobolInput").value;
-            fetch('/api/parse-grid', {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain' },
-                body: content
-            })
-            .then(response => response.json())
-            .then(data => {
-                table.setData(data);
-            });
-        }
+    var content = document.getElementById("cobolInput").value;
+    fetch('/api/parse-treeViewGridInDetail', {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: content
+    })
+    .then(response => response.json())
+    .then(res => {
+        if(res.success==true)
+    {
+        table.setData(res.data);
+    }        
+    else
+    {
+        document.getElementById("selection-info").innerHTML = res.error;        
+    }
+        expandAll();
+    });
+}
+
+function expandAll() {
+  table.getRows().forEach((row) => {
+    if (!row._row.modules.dataTree.children) {
+      return
+    }
+
+    row._row.modules.dataTree.open = true
+    requestAnimationFrame(() => {
+      row._row.updateData(row._row.data)
+    })
+  })
+}
+function collapseAll() {
+  table.getRows().forEach((row) => {
+    if (!row._row.modules.dataTree.children) {
+      return
+    }
+
+    row._row.modules.dataTree.open = false
+    requestAnimationFrame(() => {
+      row._row.updateData(row._row.data)
+    })
+  })
+}1
+
+function calculateGap(selectedData) {
+    console.log("calculateGap");   
+    console.log(selectedData);   
+     
+    if (selectedData.length !== 2) {
+        return "請選取兩個欄位來計算間距...";
+    }
+
+    // 排序選取的資料，確保依 position 由小到大
+    selectedData.sort((a, b) => a.position - b.position);
+
+    let first = selectedData[0];
+    let second = selectedData[1];
+
+    let firstEnd = first.Position + first.StorageLength - 1;
+    let gap = second.Position - (firstEnd + 1);
+
+    let resultMsg = `
+        <strong>計算結果：</strong><br>
+        欄位 A (${first.FieldName}) 結束於位置: ${firstEnd}<br>
+        欄位 B (${second.FieldName}) 開始於位置: ${second.Position}<br>
+    `;
+
+    if (gap > 0) {
+        resultMsg += `<span style="color: red;">⚠️ 兩者之間有 ${gap} Bytes 的空隙 (可能存在隱藏的 FILLER)。</span>`;
+    } else if (gap < 0) {
+        resultMsg += `<span style="color: blue;">ℹ️ 兩者重疊了 ${Math.abs(gap)} Bytes (可能是 REDEFINES 結構)。</span>`;
+    } else {
+        resultMsg += `<span style="color: green;">✅ 兩者緊密相連，無空隙。</span>`;
+    }
+
+    return resultMsg;
+}
     </script>
 </body>
 </html>
