@@ -34,7 +34,12 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-webmvc</artifactId>
 		</dependency>
-
+<repositories>
+    <repository>
+        <id>jitpack.io</id>
+        <url>https://jitpack.io</url>
+    </repository>
+</repositories>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-webmvc-test</artifactId>
@@ -42,9 +47,9 @@
 		</dependency>
 
 <dependency>
-    <groupId>net.sf.cb2xml</groupId>
+    <groupId>com.github.bmTas</groupId>
     <artifactId>cb2xml</artifactId>
-    <version>1.01.1</version>
+    <version>1.01.08</version>
 </dependency>
 	</dependencies>
 
