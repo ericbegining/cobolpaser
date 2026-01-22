@@ -3,8 +3,8 @@
 <head>
     <meta charset="utf-8" />
     <title>COBOL Structure Viewer</title>
-    <link href="https://unpkg.com/tabulator-tables/dist/css/tabulator.min.css" rel="stylesheet">
-    <script src="https://unpkg.com/tabulator-tables/dist/js/tabulator.min.js"></script>
+    <link href="lib/tabulator.min.css" rel="stylesheet">
+    <script src="lib/tabulator.min.js"></script>
     <style>
         :root {
             --sidebar-width: 450px;
@@ -58,7 +58,7 @@
         }
 
         textarea {
-            width: 90%; height: 300px; margin-bottom: 15px ;
+            width: 95%; height: 300px; margin-bottom: 15px ;
             border: 1px solid #ced4da; border-radius: 4px; padding: 10px;
             font-family: monospace; resize: none;
         }
@@ -115,25 +115,67 @@
             }
         },
     columns: [
-        {formatter:"rowSelection", titleFormatter:"rowSelection", hozAlign:"center", headerSort:false, width:150}, // 加入核取方塊
-        {title: "Level", field: "LevelString", width: 80},
-        {title: "欄位名稱", field: "FieldName", width: 250},
-        {title: "Structure / Repeat", field: "meta", width: 180, formatter: function(cell) {
-                let data = cell.getData();
-                let html = "";
-                if (data.redefines) html += `<span style="background:#edf2ff; color:#364fc7; padding:2px 6px; border-radius:4px; font-size:11px;">🔄 REDEF: ${data.redefines}</span> `;
-                if (data.occurs > 0) html += `<span style="background:#fff4e6; color:#d9480f; padding:2px 6px; border-radius:4px; font-size:11px;">🔢 x${data.occurs}</span>`;
-                return html;
-            }},
+        {formatter:"rowSelection", titleFormatter:"rowSelection", hozAlign:"center", headerSort:false, width:120}, // 加入核取方塊
+        // {title: "Level", field: "LevelString", width: 80},
+        {
+        title: "Level", 
+        field: "LevelString", 
+        width: 70, 
+        formatter: function(cell) {
+        let data = cell.getData();
+        let depth = data.Depth || 0;
+        
+        // 使用 &nbsp; (不換行空白) 根據深度重複增加
+        // 每多一層，前面就多加一個全形或半形空白
+        let spaces = "&nbsp;".repeat(depth * 2); // 這裡 * 2 是為了讓視覺縮排更明顯
+        
+        // 如果是 Gap 則不需要縮排或另外處理
+        // if (data.isGap) {
+        //     return `<span style="color: #d9534f;">${cell.getValue()}</span>`;
+        // }
+        
+        return `<span>${spaces}${cell.getValue()}</span>`;
+        }
+        },
+        // {title: "欄位名稱", field: "FieldName", width: 250},
+        {
+        title: "欄位名稱", 
+        field: "FieldName", 
+        width: 300, 
+        formatter: function(cell) {
+        let data = cell.getData();
+        let depth = data.Depth || 0;
+        
+        // 使用 &nbsp; (不換行空白) 根據深度重複增加
+        // 每多一層，前面就多加一個全形或半形空白
+        let spaces = "&nbsp;".repeat(depth * 2); // 這裡 * 2 是為了讓視覺縮排更明顯
+        
+        // 如果是 Gap 則不需要縮排或另外處理
+        // if (data.isGap) {
+        //     return `<span style="color: #d9534f;">${cell.getValue()}</span>`;
+        // }
+        
+        return `<span>${spaces}${cell.getValue()}</span>`;
+        }
+        },
+        // {title: "Structure / Repeat", field: "meta", width: 180, formatter: function(cell) {
+        //         let data = cell.getData();
+        //         let html = "";
+        //         if (data.redefines) html += `<span style="background:#edf2ff; color:#364fc7; padding:2px 6px; border-radius:4px; font-size:11px;">🔄 REDEF: ${data.redefines}</span> `;
+        //         if (data.occurs > 0) html += `<span style="background:#fff4e6; color:#d9480f; padding:2px 6px; border-radius:4px; font-size:11px;">🔢 x${data.occurs}</span>`;
+        //         return html;
+        //     }},
         {title: "起始位置", field: "Position",width: 90, hozAlign: "right"},
+        {title: "終止位置", field: "EndPosition",width: 90, hozAlign: "right"},
         {title: "長度", field: "StorageLength",width: 90, hozAlign: "right"},
+        {title: "Occurs", field: "Occurs"},
+        {title: "總長度", field: "TotalStorageLength",width: 90, hozAlign: "right"},
         {title: "Picture", field: "Picture"},
         {title: "NumericClass", field: "NumericClass"},
         {title: "DependingOn", field: "DependingOn"},
         {title: "isFieldRedefined", field: "isFieldRedefined"},
         {title: "isFieldRedefines", field: "isFieldRedefines"},
-        {title: "RedefinesFieldName", field: "RedefinesFieldName"},
-        {title: "Occurs", field: "Occurs"},
+        {title: "RedefinesFieldName", field: "RedefinesFieldName"},        
         {title: "Usage", field: "Usage"},
         {title: "Value", field: "Value"}
 
@@ -164,7 +206,7 @@ table.on("rowSelectionChanged", function(data, rows) {
 
         function parseCobol() {
     var content = document.getElementById("cobolInput").value;
-    fetch('/api/parse-treeViewGridInDetail', {
+    fetch('/api/parseInDepth', {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain' },
         body: content

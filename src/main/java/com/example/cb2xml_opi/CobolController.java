@@ -5,10 +5,10 @@ import net.sf.cb2xml.ICb2XmlBuilder;
 import net.sf.cb2xml.def.Cb2xmlConstants;
 import net.sf.cb2xml.def.ICopybook;
 import net.sf.cb2xml.def.IItem;
-import net.sf.cb2xml.def.Cb2xmlConstants; 
+
 import org.springframework.web.bind.annotation.*;
 
-import java.io.Console;
+
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
@@ -17,10 +17,13 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+
 @CrossOrigin(origins = "*") // 允許任何來源的程式呼叫
 @RestController
 @RequestMapping("/api")
 public class CobolController {
+    
 
     @PostMapping("/parse")
     public CopybookResponse parse(@RequestBody String content) {
@@ -171,8 +174,8 @@ public class CobolController {
     }
 
     // @PostMapping(value="/parse-treeViewGridInDetail", consumes = "application/json")
-     @PostMapping(value="/parse-treeViewGridInDetail")
-    public CopybookResponse parseForTreeViewGridInDetail(@RequestBody String content) {
+     @PostMapping(value="/parseInDepth")
+    public CopybookResponse parseInDepth(@RequestBody String content) {
     try {
         // 1. 根據字串選擇對應的 CblLineFormat
             // Cb2xmlConstants.CblLineFormat format = Cb2xmlConstants CblLineFormat.valueOf(request.lineFormat.toUpperCase());
@@ -180,7 +183,7 @@ public class CobolController {
         ICb2XmlBuilder cb2= Cb2Xml3.newBuilder(new StringReader(content), "temp");
         cb2.setCobolLineFormat(Cb2xmlConstants.FREE_FORMAT);
         ICopybook copybook =cb2.asCobolItemTree();        
-        return new CopybookResponse(true, buildTreeInDetail(copybook.getChildItems()));
+        return new CopybookResponse(true, buildTreeInDepth(copybook.getChildItems(),0));
     } catch (Exception e) {
         System.console().printf(e.getMessage());
         return new CopybookResponse(false, "解析出錯: " + e.getMessage());
@@ -188,7 +191,7 @@ public class CobolController {
     }    
 
 
-    private List<Map<String, Object>> buildTreeInDetail(List<? extends IItem> items) {
+    private List<Map<String, Object>> buildTreeInDepth(List<? extends IItem> items, int depth) {
     List<Map<String, Object>> tree = new ArrayList<>();
     for (IItem item : items) {
         Map<String, Object> row = new LinkedHashMap<>();
@@ -203,14 +206,44 @@ public class CobolController {
         row.put("DisplayPosition", item.getDisplayPosition());
 
         row.put("Usage", item.getUsage());
-        row.put("Occurs", item.getOccurs());
-        row.put("OccursMin", item.getOccursMin());
+
+        if (item.getOccurs() > 0){
+            row.put("Occurs", item.getOccurs());
+        }
+        else{
+            row.put("Occurs", -1);
+        }
+
+        if (item.getOccursMin() > 0){
+            row.put("OccursMin", item.getOccursMin());
+        }
+        else{
+            row.put("OccursMin", -1);
+        }
+
+        
         row.put("Justified", item.getJustified());
-        row.put("Position", item.getPosition());
+        row.put("Position", item.getPosition());        
+
+        if (item.getOccurs() > 0){
+            row.put("EndPosition", item.getPosition()+item.getStorageLength()*item.getOccurs()-1);
+        }
+        else{
+            row.put("EndPosition", item.getPosition()+item.getStorageLength()-1);
+        }
         
         row.put("RedefinesFieldName", item.getRedefinesFieldName());
         row.put("Scale", item.getScale());
+
+
         row.put("StorageLength", item.getStorageLength());
+
+        if (item.getOccurs() > 0){
+            row.put("TotalStorageLength", item.getStorageLength()*item.getOccurs());
+        }
+        else{
+            row.put("TotalStorageLength", item.getStorageLength());
+        }
 
         row.put("isSync", item.isSync());        
         
@@ -222,12 +255,13 @@ public class CobolController {
         row.put("isInheritedUsage", item.isInheritedUsage());
         row.put("isBlankWhenZero", item.isBlankWhenZero());
         row.put("RelativeLevel", item.getRelativeLevel());
+        row.put("Depth", depth);
         
 
 
         // 關鍵點：如果有子項目，遞迴放入 _children 欄位
         if (item.getChildItems() != null && !item.getChildItems().isEmpty()) {
-            row.put("_children", buildTreeInDetail(item.getChildItems()));
+            row.put("_children", buildTreeInDepth(item.getChildItems(),depth+1));
             }
             tree.add(row);
         }
@@ -235,9 +269,105 @@ public class CobolController {
         return tree;
 
     }    
+   
+     @PostMapping(value="/parseFlatten")
+    public CopybookResponse parseFlatten(@RequestBody String content) {
+    try {
+        // 1. 根據字串選擇對應的 CblLineFormat
+            // Cb2xmlConstants.CblLineFormat format = Cb2xmlConstants CblLineFormat.valueOf(request.lineFormat.toUpperCase());
+
+        ICb2XmlBuilder cb2= Cb2Xml3.newBuilder(new StringReader(content), "temp");        
+
+        cb2.setCobolLineFormat(Cb2xmlConstants.FREE_FORMAT);
+        ICopybook copybook =cb2.asCobolItemTree();        
+
+        List<Map<String, Object>> gridData = new ArrayList<>();
+        buildTreeFlatten(copybook.getChildItems(),gridData,0);
+
+        return new CopybookResponse(true, gridData);
+    } catch (Exception e) {
+        System.console().printf(e.getMessage());
+        return new CopybookResponse(false, "解析出錯: " + e.getMessage());
+    
+    }
+    }    
+
+    private void buildTreeFlatten(List<? extends IItem> items,List<Map<String, Object>> gridData, int depth) {
+    
+    for (IItem item : items) {
+        Map<String, Object> row = new LinkedHashMap<>();
+        row.put("LevelString", item.getLevelString());
+        row.put("LevelNumber", item.getLevelNumber());
+        row.put("FieldName", item.getFieldName());
+        row.put("Picture", item.getPicture());
+
+        row.put("NumericClass", item.getNumericClass());
+        row.put("DependingOn", item.getDependingOn());
+        row.put("DisplayLength", item.getDisplayLength());
+        row.put("DisplayPosition", item.getDisplayPosition());
+
+        row.put("Usage", item.getUsage());
+
+        if (item.getOccurs() > 0){
+            row.put("Occurs", item.getOccurs());
+        }
+        else{
+            row.put("Occurs", -1);
+        }
+
+        if (item.getOccursMin() > 0){
+            row.put("OccursMin", item.getOccursMin());
+        }
+        else{
+            row.put("OccursMin", -1);
+        }
+
+        
+        row.put("Justified", item.getJustified());
+        row.put("Position", item.getPosition());        
+
+        if (item.getOccurs() > 0){
+            row.put("EndPosition", item.getPosition()+item.getStorageLength()*item.getOccurs()-1);
+        }
+        else{
+            row.put("EndPosition", item.getPosition()+item.getStorageLength()-1);
+        }
+        
+        row.put("RedefinesFieldName", item.getRedefinesFieldName());
+        row.put("Scale", item.getScale());
+
+
+        row.put("StorageLength", item.getStorageLength());
+
+        if (item.getOccurs() > 0){
+            row.put("TotalStorageLength", item.getStorageLength()*item.getOccurs());
+        }
+        else{
+            row.put("TotalStorageLength", item.getStorageLength());
+        }
+
+        row.put("isSync", item.isSync());        
+        
+
+        row.put("Value", item.getValue());
+
+        row.put("isFieldRedefined", item.isFieldRedefined());
+        row.put("isFieldRedefines", item.isFieldRedefines());
+        row.put("isInheritedUsage", item.isInheritedUsage());
+        row.put("isBlankWhenZero", item.isBlankWhenZero());
+        row.put("RelativeLevel", item.getRelativeLevel());
+        row.put("Depth", depth);
+        gridData.add(row);
+        // 如果有子項目，遞迴處理
+            if (item.getChildItems() != null && !item.getChildItems().isEmpty()) {
+                buildTreeFlatten(item.getChildItems(), gridData,depth+1);
+            }
+
+    }    
+
+    }
 
 }
-
 class CopybookResponse {
     public boolean success;
     public Object data;
@@ -252,4 +382,5 @@ class CopybookResponse {
         this.error = error;
     }
 }
+
 
