@@ -57,8 +57,25 @@
             padding: 5px 10px; margin-bottom: 10px; align-self: flex-start;
         }
 
+        .btn-sample {
+    background: #6c757d; /* 灰色，表示輔助功能 */
+    color: white;
+    border: none;
+    padding: 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-bottom: 10px;
+    width: 100%;
+    transition: background 0.2s;
+}
+
+.btn-sample:hover {
+    background: #5a6268;
+}
+
         textarea {
-            width: 95%; height: 300px; margin-bottom: 15px ;
+            width: 95%; height: 300px; margin-bottom: 15px ; margin-top: 5px;
             border: 1px solid #ced4da; border-radius: 4px; padding: 10px;
             font-family: monospace; resize: none;
         }
@@ -84,6 +101,7 @@
 <div class="wrapper" id="mainWrapper">
     <aside id="sidebar">
         <h3>輸入 Copybook</h3>
+        <button class="btn-sample" onclick="loadSample()">載入測試範例 (REC-FACTURE)</button>
         <textarea id="cobolInput" placeholder="在此貼上 COBOL 代碼..."></textarea>
         <button class="btn-parse" onclick="parseCobol()">開始解析</button>
         
@@ -282,6 +300,46 @@ function calculateGap(selectedData) {
     }
 
     return resultMsg;
+}
+
+
+function loadSample() {
+    const sampleCode = `       01  REC-FACTURE.                                                 
+           03  FS1                 PIC X.                               
+           03  FS2.                                                     
+               05  FS2A            PIC 9.                               
+               05  RFS2B           PIC X(8).
+               05  FS2B REDEFINES RFS2B  PIC 9(8).
+           03  FS3.                                                     
+               05  FS3A            PIC 9.                               
+               05  FS3B            PIC X(10).                           
+           03  FS4.                                                     
+               05  FS4A            PIC 99.                              
+               05  FS4B            PIC 99.                              
+               05  FS4C            PIC 99.                              
+           03  FS5                 PIC X(5).                            
+           03  FS6                 PIC X(20).                           
+           03  FS7                 PIC 9.                               
+           03  FS8                 PIC S9(9)V99    COMP-3.              
+           03  FS9                 PIC S9(9)V99    COMP-3.              
+           03  FS10                PIC 9.                               
+           03  FS11                PIC S9(9)V99    COMP-3.              
+           03  FS12                PIC S9(9)V99    COMP-3.              
+           03  FS13                PIC S9(9)V99    COMP-3.              
+           03  FS14-15 OCCURS 10.                                       
+               05  FS14            PIC 9.                               
+               05  FS15            PIC S9(9)V99    COMP-3.              
+               05  FS16            PIC S9(9)V99    COMP-3.              
+           03  FS17 OCCURS 10      PIC S9(9)V99    COMP-3.              
+           03 FS18                 PIC 9(6).                            
+           03  FS19                PIC 9.                               
+           03  FILLER              PIC X.`;
+
+    // 填入 textarea
+    document.getElementById("cobolInput").value = sampleCode;
+    
+    // 填入後自動執行一次解析，提升使用者體驗
+     parseCobol(); 
 }
     </script>
 </body>
