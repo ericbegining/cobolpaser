@@ -7,7 +7,7 @@
     <script src="lib/tabulator.min.js"></script>
     <style>
         :root {
-            --sidebar-width: 450px;
+            --sidebar-width: 380px;
             --primary-color: #2c3e50;
         }
 
@@ -65,9 +65,10 @@
             border-radius: 4px;
             cursor: pointer;
             font-size: 14px;
-            margin-bottom: 10px;
-            width: 100%;
+            margin-bottom: 10px;            
             transition: background 0.2s;
+            display: inline-block;
+            
         }
 
         .btn-sample:hover {
@@ -76,13 +77,21 @@
 
         textarea {
             width: 95%; height: 300px; margin-bottom: 15px ; margin-top: 5px;
-            border: 1px solid #ced4da; border-radius: 4px; padding: 10px;
-            font-family: monospace; resize: none;
+            border: 1px solid #ced4da; border-radius: 4px; padding: 10px;            
+
+            /* 關鍵設定：強制不換行並顯示水平捲軸 */
+            white-space: pre; 
+            overflow-x: auto; 
+            resize: vertical; /* 只允許上下拉動，不允許左右拉動 */
+    
+            /* 強烈建議：使用等寬字型，對齊 COBOL 欄位才不會亂掉 */
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
         }
 
         .btn-parse {
             background: #007bff; color: white; border: none; padding: 10px;
             border-radius: 4px; cursor: pointer; font-size: 16px;
+            margin-bottom: 10px;
         }
 
         .btn-parse:hover { background: #0056b3; }
@@ -93,6 +102,34 @@
 
         /* 讓表格填滿剩餘空間 */
         #example-table { flex-grow: 1; border: 1px solid #ccc; }
+
+        .modal {
+            display: none; position: fixed; z-index: 1000; left: 0; top: 0;
+            width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: #fff; margin: 5% auto; padding: 20px;
+            border: 1px solid #888; width: 70%; height: 80%; overflow-y: auto;
+            border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .close:hover { color: black; }
+
+        .btn-download {
+            background-color: #28a745; /* 綠色，代表下載/儲存 */
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 15px; /* 與關閉按鈕保持距離 */
+            vertical-align: middle;
+        }
+
+        .btn-download:hover {
+            background-color: #218838;
+        }
     </style>
 </head>
 <body>
@@ -101,20 +138,33 @@
 <div class="wrapper" id="mainWrapper">
     <aside id="sidebar">
         <h3>輸入 Copybook</h3>
-        <button class="btn-sample" onclick="loadSample()">載入測試範例 (REC-FACTURE)</button>
-        <textarea id="cobolInput" placeholder="在此貼上 COBOL 代碼..."></textarea>
-        <button class="btn-parse" onclick="parseCobol()">開始解析</button>
         
+        <textarea id="cobolInput" wrap="off" placeholder="在此貼上 COBOL 代碼..."></textarea>
+        <button class="btn-parse" onclick="parseCobol()">開始解析</button>        
         
+        <div style="margin-top: auto; padding: 20px; border-top: 1px solid #ddd;">
+            <div><button class="btn-sample" onclick="loadSample()">🔧測試案例 1</button></div>
+            
+            <div><button class="btn-sample" onclick="loadSample2()">🔧測試案例 2</button></div>
+            <div><a href="#" onclick="openDoc_Python()" style="color: #666; text-decoration: none; font-size: 13px;">📖 Python 介接後端API範例</a></div>
+            <div><a href="#" onclick="openDoc_Info()" style="color: #666; text-decoration: none; font-size: 13px;">ℹ️ 相關資訊</a></div>
+        </div>
     </aside>
 
     <main id="content">
         <button id="toggle-btn" onclick="toggleSidebar()">☰ 收納/展開選單</button>
-        <div id="selection-info">選取兩個欄位以計算間隙...</div>
+        <div id="selection-info">選取兩個欄位以計算距離</div>
         <div id="example-table"></div>
     </main>
 </div>
-
+<div id="docModal" class="modal">
+    <div class="modal-content">
+        <button class="btn-download" onclick="downloadDoc()">💾 下載文件 (.md)</button>
+        <span class="close" onclick="closeDoc()">&times;</span>
+        <div id="mdContainer" style="white-space: pre-wrap; font-family: monospace; font-size: 14px; line-height: 1.5;">
+            </div>
+    </div>
+</div>
     <script>
     var table = new Tabulator("#example-table", {    
     dataTree: true,
@@ -159,7 +209,7 @@
         {
         title: "欄位名稱", 
         field: "FieldName", 
-        width: 300, 
+        width: 180, 
         formatter: function(cell) {
         let data = cell.getData();
         let depth = data.Depth || 0;
@@ -186,13 +236,63 @@
         {title: "起始位置", field: "Position",width: 90, hozAlign: "right"},
         {title: "終止位置", field: "EndPosition",width: 90, hozAlign: "right"},
         {title: "長度", field: "StorageLength",width: 90, hozAlign: "right"},
-        {title: "Occurs", field: "Occurs"},
+
+        //Occurs
+        {
+        title: "Occurs", 
+        field: "Occurs", 
+        
+        formatter: function(cell) {
+        let cellValue = cell.getValue();                    
+                
+        if (cellValue < 0) {
+            return `<span></span>`;
+        }else
+        {
+            return `<span>${cellValue}</span>`;
+        }            
+        }
+        },
+
         {title: "總長度", field: "TotalStorageLength",width: 90, hozAlign: "right"},
         {title: "Picture", field: "Picture"},
         {title: "NumericClass", field: "NumericClass"},
-        {title: "DependingOn", field: "DependingOn"},
-        {title: "isFieldRedefined", field: "isFieldRedefined"},
-        {title: "isFieldRedefines", field: "isFieldRedefines"},
+        // {title: "DependingOn", field: "DependingOn"},
+
+        //isFieldRedefined
+        {
+        title: "Redefined", 
+        field: "isFieldRedefined", 
+        
+        formatter: function(cell) {
+        let cellValue = cell.getValue();                    
+                
+        if (cellValue == false) {
+            return `<span></span>`;
+        }else
+        {
+            return `<span>v</span>`;
+        }            
+        }
+        },
+
+        // {title: "isFieldRedefines", field: "isFieldRedefines"},
+        {
+        title: "Redefines", 
+        field: "isFieldRedefines", 
+        
+        formatter: function(cell) {
+        let cellValue = cell.getValue();                    
+                
+        if (cellValue == false) {
+            return `<span></span>`;
+        }else
+        {
+            return `<span>v</span>`;
+        }            
+        }
+        },
+
         {title: "RedefinesFieldName", field: "RedefinesFieldName"},        
         {title: "Usage", field: "Usage"},
         {title: "Value", field: "Value"}
@@ -200,8 +300,6 @@
     ],
     
 });
-
-
 
 // Subscribe to the rowSelectionChanged event
 
@@ -266,18 +364,18 @@ function collapseAll() {
       row._row.updateData(row._row.data)
     })
   })
-}1
+}
 
 function calculateGap(selectedData) {
     console.log("calculateGap");   
     console.log(selectedData);   
      
     if (selectedData.length !== 2) {
-        return "請選取兩個欄位來計算間距...";
+        return "請選取兩個欄位來計算距離...";
     }
 
     // 排序選取的資料，確保依 position 由小到大
-    selectedData.sort((a, b) => a.position - b.position);
+    selectedData.sort((a, b) => a.Position - b.Position);
 
     let first = selectedData[0];
     let second = selectedData[1];
@@ -292,55 +390,179 @@ function calculateGap(selectedData) {
     `;
 
     if (gap > 0) {
-        resultMsg += `<span style="color: red;">⚠️ 兩者之間有 ${gap} Bytes 的空隙 (可能存在隱藏的 FILLER)。</span>`;
+        resultMsg += `<span style="color: red;">⚠️ 兩者距離 ${gap} Bytes 。</span>`;
     } else if (gap < 0) {
         resultMsg += `<span style="color: blue;">ℹ️ 兩者重疊了 ${Math.abs(gap)} Bytes (可能是 REDEFINES 結構)。</span>`;
     } else {
-        resultMsg += `<span style="color: green;">✅ 兩者緊密相連，無空隙。</span>`;
+        resultMsg += `<span style="color: green;">✅ 兩者相連。</span>`;
     }
 
     return resultMsg;
 }
 
 
-function loadSample() {
-    const sampleCode = `       01  REC-FACTURE.                                                 
-           03  FS1                 PIC X.                               
-           03  FS2.                                                     
-               05  FS2A            PIC 9.                               
-               05  RFS2B           PIC X(8).
-               05  FS2B REDEFINES RFS2B  PIC 9(8).
-           03  FS3.                                                     
-               05  FS3A            PIC 9.                               
-               05  FS3B            PIC X(10).                           
-           03  FS4.                                                     
-               05  FS4A            PIC 99.                              
-               05  FS4B            PIC 99.                              
-               05  FS4C            PIC 99.                              
-           03  FS5                 PIC X(5).                            
-           03  FS6                 PIC X(20).                           
-           03  FS7                 PIC 9.                               
-           03  FS8                 PIC S9(9)V99    COMP-3.              
-           03  FS9                 PIC S9(9)V99    COMP-3.              
-           03  FS10                PIC 9.                               
-           03  FS11                PIC S9(9)V99    COMP-3.              
-           03  FS12                PIC S9(9)V99    COMP-3.              
-           03  FS13                PIC S9(9)V99    COMP-3.              
-           03  FS14-15 OCCURS 10.                                       
-               05  FS14            PIC 9.                               
-               05  FS15            PIC S9(9)V99    COMP-3.              
-               05  FS16            PIC S9(9)V99    COMP-3.              
-           03  FS17 OCCURS 10      PIC S9(9)V99    COMP-3.              
-           03 FS18                 PIC 9(6).                            
-           03  FS19                PIC 9.                               
-           03  FILLER              PIC X.`;
+    function loadSample() {
+            const sampleCode = `       01  REC-FACTURE.                                                 
+                03  FS1                 PIC X.                               
+                03  FS2.                                                     
+                    05  FS2A            PIC 9.                               
+                    05  RFS2B           PIC X(8).
+                    05  FS2B REDEFINES RFS2B  PIC 9(8).
+                03  FS3.                                                     
+                    05  FS3A            PIC 9.                               
+                    05  FS3B            PIC X(10).                           
+                03  FS4.                                                     
+                    05  FS4A            PIC 99.                              
+                    05  FS4B            PIC 99.                              
+                    05  FS4C            PIC 99.                              
+                03  FS5                 PIC X(5).                            
+                03  FS6                 PIC X(20).                           
+                03  FS7                 PIC 9.                               
+                03  FS8                 PIC S9(9)V99    COMP-3.              
+                03  FS9                 PIC S9(9)V99    COMP-3.              
+                03  FS10                PIC 9.                               
+                03  FS11                PIC S9(9)V99    COMP-3.              
+                03  FS12                PIC S9(9)V99    COMP-3.              
+                03  FS13                PIC S9(9)V99    COMP-3.              
+                03  FS14-15 OCCURS 10.                                       
+                    05  FS14            PIC 9.                               
+                    05  FS15            PIC S9(9)V99    COMP-3.              
+                    05  FS16            PIC S9(9)V99    COMP-3.              
+                03  FS17 OCCURS 10      PIC S9(9)V99    COMP-3.              
+                03 FS18                 PIC 9(6).                            
+                03  FS19                PIC 9.                               
+                03  FILLER              PIC X.`;
 
-    // 填入 textarea
-    document.getElementById("cobolInput").value = sampleCode;
-    
-    // 填入後自動執行一次解析，提升使用者體驗
-     parseCobol(); 
-}
+            // 填入 textarea
+            document.getElementById("cobolInput").value = sampleCode;
+            
+            // 填入後自動執行一次解析，提升使用者體驗
+            parseCobol(); 
+        }
+    function loadSample2() {
+            const sampleCode = `       01  H13-REC.
+           05  DISP                    PIC --,---,9.99. 
+           05  FILLER                  PIC X(002)  VALUE SPACES.
+           05  FILLER                  PIC X(054)  VALUE SPACES.
+           05  FILLER                  PIC X(001)  VALUE "*".
+           05  FILLER                  PIC X(032)  VALUE ALL "*".
+           05  FILLER                  PIC X(001)  VALUE "*".
+           05  FILLER                  PIC X(006)  VALUE SPACES.
+           05  FILLER                  PIC X(056)  VALUE
+               "　　＜＜　錯誤理由　　＞＞".
+           05  FILLER                  PIC X(012)  VALUE "(RPT016P)".
+       01  H14-REC.
+           05  FILLER                  PIC X(002)  VALUE SPACES.
+           05  FILLER                  PIC X(054)  VALUE SPACES.
+           05  FILLER                  PIC X(001)  VALUE "*".
+           05  FILLER                  PIC X(032)  VALUE
+               "           **銀行 ".
+           05  FILLER                  PIC X(001)  VALUE "*".
+           05  FILLER                  PIC X(003)  VALUE SPACES.
+           05  FILLER                  PIC X(050)  VALUE
+               "Ａ：解款行代號錯誤　Ｅ：收款人帳號空白".
+           05  FILLER                  PIC X(012)  VALUE "印表日期：".
+           05  FILLER                  PIC X(001)  VALUE SPACES.
+           05  H14-YYY                 PIC 999.
+           05  FILLER                  PIC X(001)  VALUE "/".
+           05  H14-MM                  PIC 99.
+           05  FILLER                  PIC X(001)  VALUE "/".
+           05  H14-DD                  PIC 99.
+       01  H15-REC.
+           05  FILLER                  PIC X(002)  VALUE SPACES.
+           05  FILLER                  PIC X(054)  VALUE SPACES.
+           05  FILLER                  PIC X(001)  VALUE "*".
+           05  FILLER                  PIC X(032)  VALUE
+               "           匯出匯款 ".
+           05  FILLER                  PIC X(001)  VALUE "*".
+           05  FILLER                  PIC X(003)  VALUE SPACES.
+           05  FILLER                  PIC X(050)  VALUE
+               "Ｂ：匯款機關不符　　Ｆ：收款人戶名空白".
+           05  FILLER                  PIC X(014)  VALUE "印表時間：".
+           05  H15-HH                  PIC 99.
+           05  FILLER                  PIC X(001)  VALUE ":".
+           05  H15-MI                  PIC 99.
+           05  FILLER                  PIC X(001)  VALUE ":".
+           05  H15-SE                  PIC 99.
+       01  H16-REC.
+           05  FILLER                  PIC X(002)  VALUE SPACES.
+           05  FILLER                  PIC X(054)  VALUE
+                                       "部　　門".
+           05  FILLER                  PIC X(001)  VALUE "*".
+           05  FILLER                  PIC X(032)  VALUE
+               "         登錄單兼證明書".
+
+           05  FILLER                  PIC X(001)  VALUE "*".
+           05  FILLER                  PIC X(003)  VALUE SPACES.
+           05  FILLER                  PIC X(050)  VALUE
+               "Ｃ：編號空白　　　　Ｇ：匯款金額空白　".
+           05  FILLER                  PIC X(018)  VALUE "頁　　次：".
+           05  H16-PNO                 PIC ZZZ9.
+`;
+
+            // 填入 textarea
+            document.getElementById("cobolInput").value = sampleCode;
+            
+            // 填入後自動執行一次解析，提升使用者體驗
+            parseCobol(); 
+        }        
+
+
+    function openDoc_Python() {
+        // 透過 Fetch API 讀取本地的 md 檔案
+        fetch('python_example.md')
+            .then(response => response.text())
+            .then(text => {
+                document.getElementById('mdContainer').textContent = text;
+                document.getElementById('docModal').style.display = "block";
+            })
+            .catch(err => alert("無法載入文件: " + err));
+    }
+
+    function openDoc_Info() {
+        // 透過 Fetch API 讀取本地的 md 檔案
+        fetch('info.md')
+            .then(response => response.text())
+            .then(text => {
+                document.getElementById('mdContainer').textContent = text;
+                document.getElementById('docModal').style.display = "block";
+            })
+            .catch(err => alert("無法載入文件: " + err));
+    }
+
+    function closeDoc() {
+        document.getElementById('docModal').style.display = "none";
+    }
+
+    // 點擊 Modal 外部也可關閉
+    window.onclick = function(event) {
+        let modal = document.getElementById('docModal');
+        if (event.target == modal) closeDoc();
+    }
+
+    function downloadDoc() {
+            // 1. 取得容器內的文字內容
+            const content = document.getElementById('mdContainer').textContent;
+            if (!content) {
+                alert("尚無內容可供下載");
+                return;
+            }
+
+            // 2. 建立 Blob 物件 (設定類型為 markdown)
+            const blob = new Blob([content], { type: 'text/markdown' });
+            
+            // 3. 建立一個虛擬的 <a> 標籤來觸發下載
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'document.md'; // 設定存檔檔名
+            
+            // 4. 執行下載並移除暫存
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
     </script>
 </body>
 </html>
