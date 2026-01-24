@@ -16,4 +16,4 @@
     - The cb2xml package reads a Cobol-Copybook and converts it to either
         - A java Item tree holding all the Cobol Details (Picture, position, length etc).
         - An Xml file containing the Cobol Details (Picture, position, length etc).
-    -   The cb2xml package is supplied with Mainframe Cobol details. It is possible to support other Cobol dialects (via Java plugins), the JRecord project does this.
+    -   The cb2xml package is supplied with Mainframe Cobol details. It is possible to support other Cobol dialects (via Java plugins), the JRecord project does this. 
