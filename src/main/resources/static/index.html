@@ -130,6 +130,21 @@
         .btn-download:hover {
             background-color: #218838;
         }
+
+        .btn-tool {
+            background-color: #ffffff;
+            border: 1px solid #ced4da;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .btn-tool:hover {
+            background-color: #e9ecef;
+            border-color: #adb5bd;
+        }
     </style>
 </head>
 <body>
@@ -147,13 +162,18 @@
             
             <div><button class="btn-sample" onclick="loadSample2()">🔧測試案例 2</button></div>
             <div><a href="#" onclick="openDoc_Python()" style="color: #666; text-decoration: none; font-size: 13px;">📖 Python 介接後端API範例</a></div>
+            <div><a href="#" onclick="openDoc_csharp()" style="color: #666; text-decoration: none; font-size: 13px;">📖 C# 介接後端API範例</a></div>
             <div><a href="#" onclick="openDoc_Info()" style="color: #666; text-decoration: none; font-size: 13px;">ℹ️ 相關資訊</a></div>
         </div>
     </aside>
 
     <main id="content">
-        <button id="toggle-btn" onclick="toggleSidebar()">☰ 收納/展開選單</button>
-        <div id="selection-info">選取兩個欄位以計算距離</div>
+        <div class="table-controls" style="margin-bottom: 10px; display: flex; gap: 10px;">
+            <button id="toggle-btn" onclick="toggleSidebar()">☰ 收納/展開選單</button>
+            <button class="btn-tool" onclick="expandAll()">📂 展開</button>
+            <button class="btn-tool" onclick="collapseAll()">📁 收起</button>
+        </div>
+        <div id="selection-info">選取兩個欄位以計算距離</div>        
         <div id="example-table"></div>
     </main>
 </div>
@@ -181,7 +201,18 @@
             } else if (data.redefines) {
                 row.getElement().style.backgroundColor = "#f5f3ff";
             }
+            if (data.Depth === 0) {
+            // 頂層項目背景微調，增加區隔感
+            row.getElement().style.backgroundColor = "#f0f0f0";
+            row.getElement().style.borderTop = "2px solid #333";
+            row.getElement().style.borderBottom = "2px solid #333";
+        }
+        // if (data.Depth === 1) {                                
+        //     row.getElement().style.borderBottom = "1px solid #333";
+        // }
         },
+        
+        
     columns: [
         {formatter:"rowSelection", titleFormatter:"rowSelection", hozAlign:"center", headerSort:false, width:120}, // 加入核取方塊
         // {title: "Level", field: "LevelString", width: 80},
@@ -341,29 +372,24 @@ table.on("rowSelectionChanged", function(data, rows) {
     });
 }
 
+// 假設你的 Tabulator 變數名稱為 table
+
+// 展開全部
 function expandAll() {
-  table.getRows().forEach((row) => {
-    if (!row._row.modules.dataTree.children) {
-      return
-    }
-
-    row._row.modules.dataTree.open = true
-    requestAnimationFrame(() => {
-      row._row.updateData(row._row.data)
-    })
-  })
+    // 取得所有頂層行並遞迴展開
+    var rows = table.getRows();
+    rows.forEach(function(row) {
+        row.treeExpand(); 
+    });
 }
-function collapseAll() {
-  table.getRows().forEach((row) => {
-    if (!row._row.modules.dataTree.children) {
-      return
-    }
 
-    row._row.modules.dataTree.open = false
-    requestAnimationFrame(() => {
-      row._row.updateData(row._row.data)
-    })
-  })
+// 收起全部
+function collapseAll() {
+    // 取得所有頂層行並執行收起
+    var rows = table.getRows();
+    rows.forEach(function(row) {
+        row.treeCollapse();
+    });
 }
 
 function calculateGap(selectedData) {
@@ -511,6 +537,16 @@ function calculateGap(selectedData) {
     function openDoc_Python() {
         // 透過 Fetch API 讀取本地的 md 檔案
         fetch('python_example.md')
+            .then(response => response.text())
+            .then(text => {
+                document.getElementById('mdContainer').textContent = text;
+                document.getElementById('docModal').style.display = "block";
+            })
+            .catch(err => alert("無法載入文件: " + err));
+    }
+        function openDoc_csharp() {
+        // 透過 Fetch API 讀取本地的 md 檔案
+        fetch('csharp_example.md')
             .then(response => response.text())
             .then(text => {
                 document.getElementById('mdContainer').textContent = text;

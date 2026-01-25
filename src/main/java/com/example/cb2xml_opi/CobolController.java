@@ -254,6 +254,8 @@ public class CobolController {
         row.put("isFieldRedefines", item.isFieldRedefines());
         row.put("isInheritedUsage", item.isInheritedUsage());
         row.put("isBlankWhenZero", item.isBlankWhenZero());
+        row.put("isBlankWhenZero", item.isBlankWhenZero());
+        row.put("SignClause", item.getSignClause());        
         row.put("RelativeLevel", item.getRelativeLevel());
         row.put("Depth", depth);
         

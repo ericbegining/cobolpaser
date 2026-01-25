@@ -37,12 +37,17 @@ def list_item_details(items):
         usage = item.get("Usage", "")           # 儲存格式 (USAGE)，如 COMP-3
         pos = item.get("Position", 0)           # 紀錄中的起始位元組位置
         end_pos = item.get("EndPosition", 0)    # 紀錄中的結束位元組位置
-        storage_len = item.get("StorageLength", 0) # 單一項目的物理儲存長度
+        storage_len = item.get("StorageLength", 0) # 單一項目的儲存長度
         total_len = item.get("TotalStorageLength", 0) # 包含重複次數後的總長度
         occurs = item.get("Occurs", -1)         # 重複次數 (OCCURS)
+                                                # values : {>0 :occurs 次數 ; -1:沒有 occurs}
         occurs_min = item.get("OccursMin", -1)  # 最小重複次數
+                                                # {>0 :OccursMin 次數 ; -1:沒有 OccursMin}
         redefines = item.get("RedefinesFieldName", "") # 被重定義的欄位名稱
         num_class = item.get("NumericClass", 0) # 數值類別代碼
+                                                # values : { NON_NUMERIC ; Numeric_Edited ; COBOL_NUMERIC}
+                                                # Numeric_Edited : Numeric edited fields (e.g. -,---,--9.99 are not strictly numeric in Cobol but are often used to send numeric values to non Cobol Systems. So you should consider these fields as numeric
+                                                
         scale = item.get("Scale", 0)            # 小數位數
         disp_len = item.get("DisplayLength", 0) # 顯示長度
         disp_pos = item.get("DisplayPosition", 0) # 顯示位置
@@ -56,6 +61,8 @@ def list_item_details(items):
         is_inherited_usage = item.get("isInheritedUsage", False) # 是否繼承了父層的 USAGE 設定
         is_blank_when_zero = item.get("isBlankWhenZero", False)  # 是否設定為零時顯示空白
         rel_level = item.get("RelativeLevel", 0)           # 相對層級深度
+        sign_clause= item.get("SignClause", 0)  # SignClause
+                                                #  values : { NO_SIGN_CLAUSE ; <COBOL SIGN CLAUSE> }
 
         # 輸出結果：展示階層與關鍵資訊
         indent = "  " * depth
