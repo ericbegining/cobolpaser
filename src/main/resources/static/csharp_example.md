@@ -159,7 +159,7 @@ public class CopybookItem
     /// <summary>
     /// SignClause values : { NO_SIGN_CLAUSE ; <COBOL SIGN CLAUSE> }
     /// </summary>
-    public int SignClause { get; set; }
+    public string SignClause { get; set; }
 
     [JsonPropertyName("_children")]
     public List<CopybookItem> Children { get; set; }
