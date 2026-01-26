@@ -145,6 +145,22 @@
             background-color: #e9ecef;
             border-color: #adb5bd;
         }
+        /* Redefined 標籤樣式：深灰色小標籤 */
+        .redefine-label {
+            background-color: #6c757d;
+            color: white;
+            font-size: 10px;
+            padding: 1px 4px;
+            border-radius: 3px;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
+        /* Redefined 整列背景：淺紫色條紋感 */
+        .row-redefined {
+            background-color: #f8f4ff !important; /* 淡淡的紫色區隔 */
+            font-style: italic; /* 斜體增加辨識度 */
+        }
     </style>
 </head>
 <body>
@@ -198,8 +214,9 @@
             if (data.isGap) {
                 row.getElement().style.backgroundColor = "#fff5f5";
                 row.getElement().style.color = "#e53e3e";
-            } else if (data.redefines) {
-                row.getElement().style.backgroundColor = "#f5f3ff";
+            } else if (data.isFieldRedefines) {
+                //row.getElement().style.backgroundColor = "#f5f3ff";
+                row.getElement().classList.add("row-redefined");
             }
             if (data.Depth === 0) {
             // 頂層項目背景微調，增加區隔感
@@ -242,20 +259,21 @@
         field: "FieldName", 
         width: 180, 
         formatter: function(cell) {
-        let data = cell.getData();
-        let depth = data.Depth || 0;
-        
-        // 使用 &nbsp; (不換行空白) 根據深度重複增加
-        // 每多一層，前面就多加一個全形或半形空白
-        let spaces = "&nbsp;".repeat(depth * 2); // 這裡 * 2 是為了讓視覺縮排更明顯
-        
-        // 如果是 Gap 則不需要縮排或另外處理
-        // if (data.isGap) {
-        //     return `<span style="color: #d9534f;">${cell.getValue()}</span>`;
-        // }
-        
-        return `<span>${spaces}${cell.getValue()}</span>`;
-        }
+                var data = cell.getData();
+                var name = cell.getValue();
+                
+                // 根據深度縮排 (Depth 是您在 Controller 裡計算的欄位)
+                var indent = "&nbsp;".repeat(data.Depth * 4); 
+                var content = "<span>" + indent + name + "</span>";
+
+                // 如果該欄位正在重新定義其他欄位 (isFieldRedefines 是 IItem 的屬性)
+                if (data.isFieldRedefines) {
+                    var target = data.RedefinesFieldName ? " (重定義: " + data.RedefinesFieldName + ")" : "";
+                    content += '<span class="redefine-label" title="' + target + '">Redefined</span>';
+                }
+
+                return content;
+            }
         },
         // {title: "Structure / Repeat", field: "meta", width: 180, formatter: function(cell) {
         //         let data = cell.getData();
