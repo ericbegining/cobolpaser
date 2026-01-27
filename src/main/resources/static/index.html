@@ -76,7 +76,7 @@
         }
 
         textarea {
-            width: 95%; height: 300px; margin-bottom: 15px ; margin-top: 5px;
+            width: 95%; height: 400px; margin-bottom: 15px ; margin-top: 5px;
             border: 1px solid #ced4da; border-radius: 4px; padding: 10px;            
 
             /* 關鍵設定：強制不換行並顯示水平捲軸 */
@@ -97,7 +97,7 @@
         .btn-parse:hover { background: #0056b3; }
 
         #selection-info {
-            margin-top: 10px;margin-bottom: 10px; padding: 10px; background: #e9ecef; border-radius: 4px; font-size: 14px;
+            margin-bottom: 10px; padding: 10px; background: #e9ecef; border-radius: 4px; font-size: 14px;
         }
 
         /* 讓表格填滿剩餘空間 */
@@ -134,12 +134,15 @@
         .btn-tool {
             background-color: #ffffff;
             border: 1px solid #ced4da;
-            padding: 6px 12px;
+            padding: 5px 10px;
+            margin-bottom: 10px;
             border-radius: 4px;
             cursor: pointer;
             font-size: 14px;
             transition: all 0.2s;
         }
+
+           
 
         .btn-tool:hover {
             background-color: #e9ecef;
@@ -161,6 +164,20 @@
             background-color: #f8f4ff !important; /* 淡淡的紫色區隔 */
             font-style: italic; /* 斜體增加辨識度 */
         }
+
+        .link-download {
+            color: #007bff;
+            text-decoration: none;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .link-download:hover {
+            text-decoration: underline;
+            color: #0056b3;
+        }
     </style>
 </head>
 <body>
@@ -177,8 +194,11 @@
             <div><button class="btn-sample" onclick="loadSample()">🔧測試案例 1</button></div>
             
             <div><button class="btn-sample" onclick="loadSample2()">🔧測試案例 2</button></div>
-            <div><a href="#" onclick="openDoc_Python()" style="color: #666; text-decoration: none; font-size: 13px;">📖 Python 介接後端API範例</a></div>
-            <div><a href="#" onclick="openDoc_csharp()" style="color: #666; text-decoration: none; font-size: 13px;">📖 C# 介接後端API範例</a></div>
+            <div><a href="#" onclick="openDoc_Python()" style="color: #666; text-decoration: none; font-size: 13px;">📖 Python 介接後端API說明</a></div>
+            <div>
+                <a href="#" onclick="openDoc_csharp()" style="color: #666; text-decoration: none; font-size: 13px;">📖 C# 介接後端API說明</a>
+                <a href="csharp_demo.zip" download="csharp_demo.zip" class="link-download">📦 下載C#程式碼範例 (ZIP)</a>
+            </div>
             <div><a href="#" onclick="openDoc_Info()" style="color: #666; text-decoration: none; font-size: 13px;">ℹ️ 相關資訊</a></div>
         </div>
     </aside>
@@ -305,7 +325,41 @@
 
         {title: "總長度", field: "TotalStorageLength",width: 90, hozAlign: "right"},
         {title: "Picture", field: "Picture"},
-        {title: "NumericClass", field: "NumericClass"},
+
+        //{title: "NumericClass", field: "NumericClass"},
+        {
+        title: "is Number", 
+        field: "NumericClass", 
+        
+            formatter: function(cell) {
+            let cellValue = cell.getValue();                    
+                    
+                if (cellValue == "NUMERIC_IN_COBOL" || cellValue == "NUMERIC_EDITED") {
+                    return `<span>v</span>`;
+                }else //NON_NUMERIC
+                {
+                    return `<span></span>`;
+                }            
+            }
+        },
+        // {title: "Scale", field: "Scale"},
+        {
+        title: "Scale", 
+        field: "Scale", 
+        
+            formatter: function(cell) {
+            let data = cell.getData();
+            let cellValue = cell.getValue();                    
+                    
+                if (data.NumericClass == "NUMERIC_IN_COBOL" || cellValue == "NUMERIC_EDITED") {
+                     return `<span>${cellValue}</span>`;
+                }else //NON_NUMERIC
+                {
+                    return `<span></span>`;
+                }            
+            }
+        },
+
         // {title: "DependingOn", field: "DependingOn"},
 
         //isFieldRedefined
@@ -343,7 +397,22 @@
         },
 
         {title: "RedefinesFieldName", field: "RedefinesFieldName"},        
-        {title: "Usage", field: "Usage"},
+        // {title: "Usage", field: "Usage"},
+        {
+        title: "Usage", 
+        field: "Usage", 
+        
+        formatter: function(cell) {
+        let cellValue = cell.getValue();                    
+                
+        if (cellValue == "NONE") {
+            return `<span></span>`;
+        }else
+        {
+             return `<span>${cellValue}</span>`;
+        }            
+        }
+        },
         {title: "Value", field: "Value"}
 
     ],

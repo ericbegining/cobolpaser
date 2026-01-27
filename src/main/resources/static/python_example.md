@@ -45,7 +45,7 @@ def list_item_details(items):
                                                 # {>0 :OccursMin 次數 ; -1:沒有 OccursMin}
         redefines = item.get("RedefinesFieldName", "") # 被重定義的欄位名稱
         num_class = item.get("NumericClass", 0) # 數值類別代碼
-                                                # values : { NON_NUMERIC ; Numeric_Edited ; COBOL_NUMERIC}
+                                                # values : { NON_NUMERIC ; NUMERIC_EDITED ; NUMERIC_IN_COBOL}
                                                 # Numeric_Edited : Numeric edited fields (e.g. -,---,--9.99 are not strictly numeric in Cobol but are often used to send numeric values to non Cobol Systems. So you should consider these fields as numeric
                                                 
         scale = item.get("Scale", 0)            # 小數位數
