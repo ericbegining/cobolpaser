@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>COBOL Structure & Memory Map</title>
+    <title>COBOL Structure & Memory Map (Fixed)</title>
     
     <link href="lib/tabulator.min.css" rel="stylesheet">
     <script src="lib/tabulator.min.js"></script>
@@ -13,78 +13,74 @@
             --primary-bg: #f8f9fa;
             --panel-border: #dee2e6;
             --ruler-bg: #2d3436;
-            --scale: 3; /* 1 Byte = 3px */
+            --scale: 3;
         }
 
         body { font-family: "Segoe UI", sans-serif; background: var(--primary-bg); margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
-        /* --- 頂部控制列 --- */
+        /* 工具列 */
         .toolbar {
             padding: 10px 20px; background: white; border-bottom: 1px solid var(--panel-border);
-            display: flex; gap: 15px; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); z-index: 20;
+            display: flex; gap: 15px; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); z-index: 2000; /* 工具列層級最高 */
         }
         .toolbar textarea { flex: 1; height: 50px; padding: 8px; font-family: monospace; border: 1px solid #ced4da; border-radius: 4px; resize: none; }
-        .btn { padding: 8px 16px; background: #0d6efd; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; transition: 0.2s; }
+        .btn { padding: 8px 16px; background: #0d6efd; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; }
         .btn:hover { background: #0b5ed7; }
         
-        /* 縮放控制器 */
         .zoom-ctrl { display: flex; align-items: center; gap: 10px; font-size: 13px; color: #555; background: #e9ecef; padding: 5px 12px; border-radius: 20px; }
 
-        /* --- 主佈局 (左右分割) --- */
+        /* 主佈局 */
         .main-layout { flex: 1; display: flex; overflow: hidden; position: relative; }
-
-        /* 左側：表格區 */
         .left-panel { flex: 4; border-right: 1px solid var(--panel-border); background: white; display: flex; flex-direction: column; }
         .panel-header { padding: 10px; background: #f1f3f5; font-weight: bold; border-bottom: 1px solid var(--panel-border); color: #495057; }
         #data-table { flex: 1; border: none; }
 
-        /* 右側：視覺化區 */
+        /* 右側視覺化區 */
         .right-panel { flex: 3; display: flex; background: #fff; overflow: hidden; position: relative; min-width: 300px; }
-        
-        /* 視覺化捲動容器 */
         .viz-scroller { flex: 1; overflow-y: auto; display: flex; position: relative; }
         
         /* 尺規 */
-        .ruler-col { width: 50px; background: var(--ruler-bg); color: #dfe6e9; border-right: 1px solid #636e72; position: sticky; left: 0; min-height: 100%; z-index: 50; }
+        .ruler-col { width: 50px; background: var(--ruler-bg); color: #dfe6e9; border-right: 1px solid #636e72; position: sticky; left: 0; min-height: 100%; z-index: 1000; }
         .tick { position: absolute; width: 100%; text-align: right; padding-right: 5px; font-size: 10px; border-bottom: 1px solid rgba(255,255,255,0.2); box-sizing: border-box; line-height: 0; }
         .tick.major { border-bottom: 1px solid rgba(255,255,255,0.6); font-weight: bold; }
 
         /* 記憶體區塊容器 */
-        .mem-container { flex: 1; position: relative; background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCI+PHJlY3Qgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIiBmaWxsPSIjZmZmIiAvPjxwYXRoIGQ9Ik0xMCAwTDAgMTAiIHN0cm9rZT0iI2Y4ZjhmOCIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9zdmc+'); }
+        .mem-container { flex: 1; position: relative; background-image: radial-gradient(#dee2e6 1px, transparent 1px); background-size: 20px 20px; }
 
-        /* --- 記憶體區塊樣式 (階梯式) --- */
+        /* --- 記憶體區塊樣式 (修正版) --- */
         .mem-block {
             position: absolute; box-sizing: border-box;
-            border: 1px solid rgba(0,0,0,0.15); border-radius: 0 4px 4px 0; /* 圓角只在右邊 */
+            border: 1px solid rgba(0,0,0,0.1); 
+            border-radius: 0 4px 4px 0;
             font-size: 11px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
             padding-left: 6px; display: flex; align-items: center;
             box-shadow: 2px 2px 5px rgba(0,0,0,0.05);
-            transition: transform 0.1s, box-shadow 0.1s;
+            transition: background-color 0.1s; /* 移除 transform transition 避免閃爍 */
             cursor: pointer;
+            background-color: white; /* 預設底色 */
         }
+
+        /* 關鍵修正：Hover 時提高 Z-Index，確保被選中的那個浮上來 */
         .mem-block:hover { 
-            z-index: 1000 !important; 
-            outline: 2px solid #2d3436; 
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            background-color: #fff !important; /* hover 時變亮 */
+            outline: 2px solid #333; 
+            background-color: #fff !important; 
+            z-index: 9999 !important; /* 強制最高 */
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
         }
 
         /* 顏色主題 */
-        .lvl-group { background: #e3f2fd; border-left: 5px solid #1565c0; color: #0d47a1; } /* 藍色系 */
-        .lvl-item { background: #e8f5e9; border-left: 5px solid #2e7d32; color: #1b5e20; }  /* 綠色系 */
-        .lvl-filler { background: #eceff1; border-left: 5px solid #607d8b; color: #546e7a; font-style: italic; } /* 灰色 */
+        .lvl-group { background: #e3f2fd; border-left: 5px solid #1565c0; color: #0d47a1; }
+        .lvl-item { background: #e8f5e9; border-left: 5px solid #2e7d32; color: #1b5e20; }
+        .lvl-filler { background: #eceff1; border-left: 5px solid #607d8b; color: #546e7a; font-style: italic; }
         .lvl-redefine { 
             background: repeating-linear-gradient(45deg, #fff3e0, #fff3e0 10px, #ffe0b2 10px, #ffe0b2 20px); 
-            border-left: 5px solid #ef6c00; color: #e65100; opacity: 0.9;
+            border-left: 5px solid #ef6c00; color: #e65100; opacity: 0.95;
         }
-
-        /* 標籤 (Redefined) */
-        .redefine-tag { background: #ef6c00; color: white; font-size: 9px; padding: 1px 3px; border-radius: 2px; margin-left: 5px; }
 
         /* Tooltip */
         #tooltip {
             position: fixed; display: none; background: rgba(33, 37, 41, 0.95); color: #fff;
-            padding: 10px; border-radius: 4px; font-size: 12px; pointer-events: none; z-index: 9999;
+            padding: 10px; border-radius: 4px; font-size: 12px; pointer-events: none; z-index: 10000;
             font-family: monospace; border: 1px solid #495057; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
     </style>
@@ -93,29 +89,26 @@
 
     <div class="toolbar">
         <div style="font-weight:bold; color:#333;">COBOL Analyzer</div>
-        <textarea id="cobolInput" placeholder="請在此貼上您的 COBOL Copybook..."></textarea>
-        <button class="btn" onclick="parseAndRender()">解析 (Parse)</button>
+        <textarea id="cobolInput" placeholder="貼上 COBOL Copybook..."></textarea>
+        <button class="btn" onclick="parseAndRender()">解析</button>
         <button class="btn" style="background:#6c757d" onclick="loadDemo()">範例</button>
         
         <div class="zoom-ctrl">
-            <span>🔎 Zoom:</span>
-            <input type="range" id="zoomRange" min="1" max="6" step="0.5" value="3">
+            <span>🔎 Scale:</span>
+            <input type="range" id="zoomRange" min="1" max="10" step="0.5" value="3">
             <span id="zoomVal">3px</span>
         </div>
     </div>
 
     <div class="main-layout">
-        
         <div class="left-panel">
-            <div class="panel-header">📋 欄位結構列表 (Grid View)</div>
+            <div class="panel-header">📋 列表模式</div>
             <div id="data-table"></div>
         </div>
-
         <div class="right-panel">
-            <div class="panel-header" style="position:absolute; width:100%; z-index:60; border-bottom:1px solid #ddd;">
-                🧱 記憶體地圖 (Memory Map)
+            <div class="panel-header" style="position:absolute; width:100%; z-index:900; border-bottom:1px solid #ddd;">
+                🧱 記憶體地圖
             </div>
-            
             <div class="viz-scroller" style="margin-top: 40px;">
                 <div class="ruler-col" id="ruler"></div>
                 <div class="mem-container" id="memContainer">
@@ -123,7 +116,6 @@
                 </div>
             </div>
         </div>
-
     </div>
 
     <div id="tooltip"></div>
@@ -132,13 +124,10 @@
     const API_URL = "http://localhost:8705/api/parseInDepth"; 
     let scale = 3;
     let table = null;
+    let currentData = [];
 
-    // 初始化 Tabulator
     table = new Tabulator("#data-table", {
-        height: "100%",
-        layout: "fitColumns",
-        dataTree: true,
-        dataTreeChildField: "_children",
+        height: "100%", layout: "fitColumns", dataTree: true, dataTreeChildField: "_children",
         columns: [
             { title: "Lv", field: "LevelString", width: 50 },
             { title: "Name", field: "FieldName", widthGrow: 2 },
@@ -147,66 +136,50 @@
             { title: "Len", field: "TotalStorageLength", width: 60 }
         ],
         rowFormatter: function(row) {
-            if(row.getData().isFieldRedefines) {
-                row.getElement().style.backgroundColor = "#fff3e0"; // Redefined 標示
-            }
+            if(row.getData().isFieldRedefines) row.getElement().style.backgroundColor = "#fff3e0";
         }
     });
 
-    // 縮放控制
     document.getElementById('zoomRange').addEventListener('input', (e) => {
         scale = parseFloat(e.target.value);
         document.getElementById('zoomVal').innerText = scale + "px";
-        const currentData = table.getData();
         if(currentData.length > 0) renderVisualMap(currentData);
     });
 
-    // 解析主程式
     async function parseAndRender() {
         const txt = document.getElementById('cobolInput').value;
         if(!txt.trim()) return;
 
         try {
-            const res = await fetch(API_URL, {
-                method: "POST", headers: {"Content-Type":"text/plain"}, body: txt
-            });
+            const res = await fetch(API_URL, { method: "POST", headers: {"Content-Type":"text/plain"}, body: txt });
             const json = await res.json();
             
             if(json.success) {
-                // 1. 更新左側表格
                 table.setData(json.data);
-                
-                // 2. 更新右側視覺化
-                // 需要先攤平資料結構以便繪圖
                 const flatData = [];
                 flattenData(json.data, flatData);
+                currentData = flatData; // 保存以便縮放時重繪
                 renderVisualMap(flatData);
             } else {
                 alert("解析失敗: " + json.error);
             }
-        } catch(e) {
-            console.error(e);
-            alert("API 連線錯誤");
-        }
+        } catch(e) { console.error(e); alert("連線錯誤"); }
     }
 
-    // 繪製視覺化地圖
     function renderVisualMap(data) {
         const container = document.getElementById('memContainer');
         const ruler = document.getElementById('ruler');
         container.innerHTML = "";
         ruler.innerHTML = "";
 
-        // 計算最大長度
         let maxLen = 0;
         data.forEach(d => { if(d.EndPosition > maxLen) maxLen = d.EndPosition; });
         
-        // 設定容器高度
         const totalHeight = (maxLen * scale) + 100;
         container.style.height = totalHeight + "px";
         ruler.style.height = totalHeight + "px";
 
-        // 1. 繪製尺規 (每 10 bytes 一格)
+        // 繪製尺規
         let step = scale < 2 ? 50 : 10;
         for(let i=0; i<=maxLen; i+=step) {
             const tick = document.createElement('div');
@@ -216,49 +189,48 @@
             ruler.appendChild(tick);
         }
 
-        // 2. 繪製區塊
+        // 繪製區塊
         data.forEach(item => {
             const el = document.createElement('div');
             el.className = 'mem-block';
             
-            // --- 核心邏輯：階梯式佈局 ---
-            // 垂直位置 (Y)
+            // 位置與高度
             el.style.top = (item.Position * scale) + "px";
-            // 高度
-            const h = Math.max(item.TotalStorageLength * scale, 2); // 最小 2px
+            const h = Math.max(item.TotalStorageLength * scale, 2);
             el.style.height = h + "px";
             
-            // 水平位置 (X) & 寬度 (Width)
-            // indent: 每一層深度向右縮 15px
-            const indent = item.Depth * 100;
-            
+            // 階梯式寬度與位置
+            const indent = item.Depth * 15;
             el.style.left = indent + "px";
-            el.style.width = `calc(100% - ${indent + 10}px)`; // 右邊留一點空隙
+            el.style.width = `calc(100% - ${indent + 10}px)`;
 
-            // 處理 Redefines (讓它再往右偏移一點，且浮在上面)
+            // --- 關鍵修正：Z-Index 邏輯 ---
+            // 讓子層級 (Depth 大) 的 Z-Index 比較高
+            // 這樣滑鼠移上去時，會先碰到子層級，而不是被父層級擋住
+            let baseZ = item.Depth * 10;
+
             if (item.isFieldRedefines) {
                 el.classList.add('lvl-redefine');
-                el.style.left = (indent + 100) + "px"; // 稍微錯開
-                el.style.zIndex = item.Depth + 10;
+                el.style.left = (indent + 20) + "px"; 
+                el.style.zIndex = baseZ + 5; // Redefines 稍微高一點
             } else if (item.FieldName.includes("FILLER")) {
                 el.classList.add('lvl-filler');
-                el.style.zIndex = item.Depth;
+                el.style.zIndex = baseZ;
             } else if (item._children && item._children.length > 0) {
                 el.classList.add('lvl-group');
-                el.style.zIndex = item.Depth; // 父層在下
+                el.style.zIndex = baseZ; // 父層級在下
             } else {
                 el.classList.add('lvl-item');
-                el.style.zIndex = item.Depth;
+                el.style.zIndex = baseZ + 1; // 葉子節點稍微高一點
             }
 
-            // 內容文字 (如果高度夠才顯示)
-            if (h > 14) {
+            // 內容文字
+            if (h > 12) {
                 let txt = `${item.FieldName} (${item.TotalStorageLength})`;
                 if (item.isFieldRedefines) txt += ` [REDEFINES]`;
                 el.innerText = txt;
             }
 
-            // 事件
             el.onmousemove = (e) => showTooltip(e, item);
             el.onmouseleave = hideTooltip;
 
@@ -266,19 +238,16 @@
         });
     }
 
-    // 輔助：攤平資料
     function flattenData(nodes, result) {
         nodes.forEach(node => {
             result.push(node);
-            if (node._children && node._children.length > 0) {
-                flattenData(node._children, result);
-            }
+            if (node._children && node._children.length > 0) flattenData(node._children, result);
         });
     }
 
-    // Tooltip
     const tt = document.getElementById('tooltip');
     function showTooltip(e, item) {
+        e.stopPropagation(); // 防止冒泡到父層
         tt.style.display = 'block';
         tt.style.left = (e.clientX + 15) + 'px';
         tt.style.top = (e.clientY + 15) + 'px';
