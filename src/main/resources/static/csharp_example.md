@@ -6,7 +6,23 @@
 * **.NET SDK (建議 .NET 6 以上版本)**
 * **System.Text.Json** 
 
-## 2. C# 範例程式碼
+## 2.API Endpoint
+
+-   /api/parseInDepth
+    - 以 Free Mode 解析傳入的 Copybook
+    - Free Mode
+        - 不限定欄位名稱一定要從第8欄開始
+        - 如果該行是Comment，*符號必須在該行其他文字的前面
+
+-   /api/parseInDepthStandardFormat
+    - 以 Standard Mode 解析傳入的 Copybook
+    - Standard Mode
+        - 以Cobol欄位定義解析傳入的 Copybook
+        - 由 Column 7 解析至 Column 72
+        - Column 7 -> Comments ; Column 8~72 -> Area A, B
+        - Column 1~6, Column 73~80 : 忽略
+
+## 3. C# 範例程式碼
 ```C#
 using System;
 using System.Collections.Generic;

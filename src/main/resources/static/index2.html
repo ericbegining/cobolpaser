@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COBOL Visual Diff</title>
+    <style>
+        :root {
+            --primary-col: #2c3e50;
+            --bg-color: #f8f9fa;
+            --ruler-w: 40px;
+            --gap-w: 150px; /* 中間差異區的寬度 */
+            --scale: 3;
+        }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg-color); margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* 工具列 */
+        .toolbar { padding: 10px 20px; background: #fff; border-bottom: 1px solid #ddd; display: flex; gap: 15px; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); z-index: 100; }
+        .toolbar textarea { height: 40px; padding: 5px; font-family: monospace; border: 1px solid #ccc; border-radius: 4px; font-size: 11px; flex: 1; }
+        .btn { padding: 6px 15px; background: #0d6efd; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; }
+        .btn:hover { background: #0b5ed7; }
+        
+        /* 主視圖 */
+        .viewport { flex: 1; display: flex; position: relative; overflow: auto; background: #fff; }
+        
+        /* 1. 尺規 */
+        .ruler { width: var(--ruler-w); background: #34495e; color: #ecf0f1; position: sticky; left: 0; z-index: 50; flex-shrink: 0; min-height: 100%; border-right: 1px solid #555; }
+        .tick { position: absolute; width: 100%; border-bottom: 1px solid rgba(255,255,255,0.2); font-size: 9px; text-align: right; padding-right: 4px; line-height: 0; box-sizing: border-box; }
+        .tick.major { border-bottom: 1px solid rgba(255,255,255,0.6); font-weight: bold; }
+
+        /* 2. 結構欄 (Column) */
+        .col-container { flex: 1; position: relative; min-width: 300px; border-right: 1px solid #eee; background: #fff; }
+        .col-header { position: sticky; top: 0; background: #f1f3f5; padding: 8px; text-align: center; font-weight: bold; border-bottom: 2px solid #ddd; z-index: 40; }
+        
+        /* 記憶體區塊 (Block) */
+        .block {
+            position: absolute; box-sizing: border-box;
+            border: 1px solid rgba(0,0,0,0.15); border-radius: 3px;
+            font-size: 11px; overflow: hidden; white-space: nowrap; 
+            padding-left: 6px; display: flex; align-items: center;
+            box-shadow: 1px 1px 3px rgba(0,0,0,0.05);
+            transition: all 0.2s;
+        }
+        .block:hover { z-index: 100 !important; outline: 2px solid #333; }
+        
+        /* 階層顏色與寬度控制 */
+        /* 越上層越寬，顏色越深，越下層越窄，顏色越淺 */
+        .lvl-group { background: #e3f2fd; border-left: 5px solid #1976d2; color: #0d47a1; }
+        .lvl-item  { background: #e8f5e9; border-left: 5px solid #388e3c; color: #1b5e20; }
+        .lvl-filler { background: #eceff1; border-left: 5px solid #78909c; color: #607d8b; font-style: italic; }
+        .lvl-redefine { background: repeating-linear-gradient(45deg, #fff3e0, #fff3e0 10px, #ffe0b2 10px, #ffe0b2 20px); border-left: 5px solid #f57c00; color: #e65100; }
+
+        /* 3. 中間差異連線區 (SVG) */
+        .diff-zone { width: var(--gap-w); flex-shrink: 0; background: #fafafa; position: relative; border-right: 1px solid #eee; overflow: visible; }
+        svg { width: 100%; height: 100%; overflow: visible; }
+        
+        /* 連線樣式 */
+        .link-line { fill: none; stroke: #bdc3c7; stroke-width: 1.5; }
+        .link-line.diff-pos { stroke: #f39c12; stroke-width: 2; stroke-dasharray: 4; } /* 位移: 橘色虛線 */
+        .link-line.diff-len { stroke: #e74c3c; stroke-width: 2; } /* 長度不同: 紅色實線 */
+        
+        /* 差異標籤 (Badge) */
+        .diff-label { 
+            font-size: 10px; font-weight: bold; fill: #fff; rx: 4; ry: 4;
+            filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));
+        }
+        .diff-text { font-size: 10px; font-family: monospace; fill: white; text-anchor: middle; alignment-baseline: middle; }
+
+        /* Tooltip */
+        #tooltip { position: fixed; display: none; background: rgba(0,0,0,0.85); color: #fff; padding: 8px 12px; border-radius: 4px; font-size: 12px; pointer-events: none; z-index: 9999; font-family: monospace; }
+    </style>
+</head>
+<body>
+
+<div class="toolbar">
+    <div style="flex:1">
+        <label>Copybook A (Base)</label>
+        <textarea id="txtA" placeholder="貼上 COBOL 代碼..."></textarea>
+    </div>
+    <div style="flex:1">
+        <label>Copybook B (Compare)</label>
+        <textarea id="txtB" placeholder="貼上 COBOL 代碼..."></textarea>
+    </div>
+    <div>
+        <button class="btn" onclick="runCompare()">比對 (Visual Diff)</button>
+        <div style="margin-top:5px; font-size:11px; color:#666;">
+            Scale: <input type="range" id="zoom" min="1" max="5" step="0.5" value="3" style="width:60px; vertical-align:middle">
+        </div>
+    </div>
+    <button class="btn" style="background:#6c757d" onclick="loadDemo()">範例</button>
+</div>
+
+<div class="viewport" id="viewport">
+    <div class="ruler" id="ruler"></div>
+
+    <div class="col-container">
+        <div class="col-header">Structure A</div>
+        <div id="colA" style="position:relative;"></div>
+    </div>
+
+    <div class="diff-zone">
+        <svg id="diffSvg"></svg>
+    </div>
+
+    <div class="col-container">
+        <div class="col-header">Structure B</div>
+        <div id="colB" style="position:relative;"></div>
+    </div>
+</div>
+
+<div id="tooltip"></div>
+
+<script>
+    const API_URL = "http://localhost:8705/api/parseInDepth";
+    let scale = 3;
+    let dataMapA = {}, dataMapB = {}; // 用於快速查找比對
+    let listA = [], listB = [];
+
+    document.getElementById('zoom').addEventListener('input', (e) => {
+        scale = parseFloat(e.target.value);
+        renderAll();
+    });
+
+    async function runCompare() {
+        const tA = document.getElementById('txtA').value;
+        const tB = document.getElementById('txtB').value;
+        if(!tA) return alert("請輸入 Copybook A");
+
+        // 1. 解析
+        const resA = await fetchParse(tA);
+        const resB = tB ? await fetchParse(tB) : [];
+        if(!resA) return;
+
+        // 2. 攤平資料以便渲染與比對 (保留階層資訊)
+        listA = flatten(resA);
+        listB = flatten(resB);
+
+        // 3. 建立 Map (Key = FieldName)
+        dataMapA = listA.reduce((acc, cur) => { acc[cur.FieldName] = cur; return acc; }, {});
+        dataMapB = listB.reduce((acc, cur) => { acc[cur.FieldName] = cur; return acc; }, {});
+
+        renderAll();
+    }
+
+    function renderAll() {
+        const maxBytes = Math.max(
+            listA.length ? listA[listA.length-1].EndPosition : 0,
+            listB.length ? listB[listB.length-1].EndPosition : 0
+        ) + 50;
+
+        // 設定容器高度
+        const h = maxBytes * scale + 100;
+        document.getElementById('colA').style.height = h + "px";
+        document.getElementById('colB').style.height = h + "px";
+        document.getElementById('diffSvg').setAttribute("height", h);
+
+        // 繪製
+        renderRuler(maxBytes);
+        renderBlocks(listA, 'colA');
+        renderBlocks(listB, 'colB');
+        renderLinks();
+    }
+
+    // --- 核心繪圖邏輯 ---
+    function renderBlocks(list, containerId) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = "";
+        
+        list.forEach(item => {
+            const el = document.createElement('div');
+            el.className = 'block';
+            
+            // 1. 位置與高度
+            el.style.top = (item.Position * scale) + "px";
+            el.style.height = Math.max((item.TotalStorageLength * scale), 2) + "px"; // 最小 2px
+            
+            // 2. [關鍵優化] 階梯式寬度 (Nested Width)
+            // Depth 0 (01級) 佔 100% 寬
+            // Depth 1 (05級) 佔 90% 寬 (向右靠)
+            // 這樣父層的左邊框和標籤就不會被遮住
+            const indent = item.Depth * 15; // 每層內縮 15px
+            const width = `calc(100% - ${indent}px)`;
+            
+            el.style.width = width;
+            el.style.left = indent + "px"; // 向右偏移
+            
+            // Z-Index: 越深層顯示在越上面，但因為有縮排，父層還是看得到
+            el.style.zIndex = item.Depth + 1;
+
+            // 3. 樣式判定
+            if (item.isFieldRedefines) el.classList.add('lvl-redefine');
+            else if (item.FieldName.includes("FILLER")) el.classList.add('lvl-filler');
+            else if (item._children && item._children.length > 0) el.classList.add('lvl-group');
+            else el.classList.add('lvl-item');
+
+            // 4. 文字內容
+            // 如果高度太小，就不顯示文字，避免雜亂 (Tooltip 依然有)
+            if (item.TotalStorageLength * scale > 12) {
+                el.innerText = `${item.FieldName} (${item.TotalStorageLength})`;
+            }
+
+            // 事件
+            el.onmousemove = (e) => showTooltip(e, item);
+            el.onmouseleave = hideTooltip;
+
+            container.appendChild(el);
+        });
+    }
+
+    function renderLinks() {
+        const svg = document.getElementById('diffSvg');
+        svg.innerHTML = ""; // 清空
+        
+        // 遍歷 A，如果在 B 也有，就畫線
+        listA.forEach(itemA => {
+            // 忽略 Filler 和 Redefines (避免線條太亂)
+            if (itemA.FieldName.includes("FILLER")) return;
+            if (itemA.isFieldRedefines) return;
+
+            const itemB = dataMapB[itemA.FieldName];
+            if (itemB) {
+                // 計算座標
+                // A 的連接點: 右側中點
+                // B 的連接點: 左側中點
+                // SVG 寬度固定，y 座標依據 Position * scale
+                
+                const yA = (itemA.Position * scale) + (itemA.TotalStorageLength * scale / 2);
+                const yB = (itemB.Position * scale) + (itemB.TotalStorageLength * scale / 2);
+                
+                // 差異判定
+                let status = "ok";
+                let diffText = "";
+                
+                if (itemA.TotalStorageLength !== itemB.TotalStorageLength) {
+                    status = "diff-len";
+                    diffText = `Len: ${itemA.TotalStorageLength}→${itemB.TotalStorageLength}`;
+                } else if (itemA.Position !== itemB.Position) {
+                    status = "diff-pos";
+                }
+
+                // 顏色
+                let strokeColor = "#bdc3c7";
+                if (status === "diff-len") strokeColor = "#e74c3c"; // 紅
+                if (status === "diff-pos") strokeColor = "#f39c12"; // 橘
+
+                // 畫線 (貝茲曲線)
+                const svgW = 150; // var(--gap-w)
+                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                const d = `M 0 ${yA} C ${svgW/2} ${yA}, ${svgW/2} ${yB}, ${svgW} ${yB}`;
+                
+                path.setAttribute("d", d);
+                path.setAttribute("class", `link-line ${status}`);
+                path.setAttribute("stroke", strokeColor);
+                svg.appendChild(path);
+
+                // 如果有差異，畫標籤
+                if (diffText) {
+                    const midX = svgW / 2;
+                    const midY = (yA + yB) / 2;
+                    
+                    // 背景框
+                    const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+                    rect.setAttribute("x", midX - 40);
+                    rect.setAttribute("y", midY - 8);
+                    rect.setAttribute("width", 80);
+                    rect.setAttribute("height", 16);
+                    rect.setAttribute("fill", "#c0392b");
+                    rect.setAttribute("rx", 4);
+                    
+                    // 文字
+                    const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    text.setAttribute("x", midX);
+                    text.setAttribute("y", midY);
+                    text.setAttribute("class", "diff-text");
+                    text.textContent = diffText;
+
+                    svg.appendChild(rect);
+                    svg.appendChild(text);
+                }
+            }
+        });
+    }
+
+    function renderRuler(max) {
+        const r = document.getElementById('ruler');
+        r.innerHTML = "";
+        let step = 10;
+        if (scale < 1) step = 100;
+        else if (scale < 2) step = 50;
+
+        for(let i=0; i<=max; i+=step) {
+            const div = document.createElement('div');
+            div.className = "tick " + (i% (step*5)===0 ? "major" : "");
+            div.style.top = (i*scale) + "px";
+            div.innerText = i;
+            r.appendChild(div);
+        }
+    }
+
+    // 輔助：遞迴轉平坦陣列
+    function flatten(nodes, depth=0, res=[]) {
+        nodes.forEach(node => {
+            node.Depth = depth; // 確保有深度資訊
+            res.push(node);
+            if (node._children && node._children.length > 0) {
+                flatten(node._children, depth+1, res);
+            }
+        });
+        return res;
+    }
+
+    async function fetchParse(txt) {
+        try {
+            const r = await fetch(API_URL, {
+                method:"POST", headers:{"Content-Type":"text/plain"}, body:txt
+            });
+            const j = await r.json();
+            return j.success ? j.data : (alert(j.error), null);
+        } catch(e) { console.error(e); return null; }
+    }
+
+    // Tooltip
+    const tt = document.getElementById('tooltip');
+    function showTooltip(e, item) {
+        tt.style.display = 'block';
+        tt.style.left = (e.clientX + 15) + 'px';
+        tt.style.top = (e.clientY + 15) + 'px';
+        tt.innerHTML = `${item.FieldName}<br>Pos: ${item.Position} - ${item.EndPosition}<br>Len: ${item.TotalStorageLength}<br>Pic: ${item.Picture||''}`;
+    }
+    function hideTooltip() { tt.style.display = 'none'; }
+
+    function loadDemo() {
+        document.getElementById('txtA').value = `       01  MSG-HEADER.
+           05  MSG-ID        PIC X(10).
+           05  MSG-DATE      PIC 9(8).
+           05  MSG-BODY.
+               10  ACCT-NO   PIC 9(10).
+               10  AMOUNT    PIC 9(5)V99.`;
+        document.getElementById('txtB').value = `       01  MSG-HEADER.
+           05  MSG-ID        PIC X(12).
+           05  MSG-DATE      PIC 9(8).
+           05  MSG-BODY.
+               10  ACCT-NO   PIC 9(10).
+               10  AMOUNT    PIC 9(5)V99.`;
+        runCompare();
+    }
+</script>
+</body>
+</html>

@@ -178,6 +178,89 @@
             text-decoration: underline;
             color: #0056b3;
         }
+        /* 模式切換容器 */
+        .mode-switch-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        /* Switch 主體 */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+        }
+
+        .switch input { opacity: 0; width: 0; height: 0; }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 20px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 14px; width: 14px;
+            left: 3px; bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider { background-color: #007bff; }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        /* Tooltip 提示 */
+        .mode-tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+        }
+
+        .tooltip-icon {
+            background: #6c757d;
+            color: white;
+            width: 16px;
+            height: 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-size: 12px;
+        }
+
+        .tooltip-text {
+            visibility: hidden;
+            width: 200px;
+            background-color: #333;
+            color: #fff;
+            text-align: left;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .mode-tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
@@ -188,6 +271,18 @@
         <h3>輸入 Copybook</h3>
         
         <textarea id="cobolInput" wrap="off" placeholder="在此貼上 COBOL 代碼..."></textarea>
+
+        <div class="mode-switch-container">
+            <label class="switch">
+                <input type="checkbox" id="modeSwitch" checked>
+                <span class="slider round"></span>
+            </label>
+            <span id="modeLabel">Free Mode</span> <div class="mode-tooltip">
+                <span class="tooltip-icon">?</span>
+                <span class="tooltip-text" id="modeDescription">Free Mode: 不限定欄位名稱一定要從第8欄開始。</span>
+            </div>
+        </div>
+
         <button class="btn-parse" onclick="parseCobol()">開始解析</button>        
         
         <div style="margin-top: auto; padding: 20px; border-top: 1px solid #ddd;">
@@ -222,6 +317,19 @@
     </div>
 </div>
     <script>
+    document.getElementById('modeSwitch').addEventListener('change', function() {
+    const label = document.getElementById('modeLabel');
+    const desc = document.getElementById('modeDescription');
+    
+    if(this.checked) {
+        label.innerText = "Free Mode";
+        desc.innerText = "Free Mode: 不限定欄位名稱一定要從第8欄開始；如果該行是Comment，*符號必須在該行其他文字的前面。";
+    } else {
+        label.innerText = "Standard Mode";
+        desc.innerText = "以 Cobol 欄位定義解析傳入的 Copybook；Column 7 -> Comments ; Column 8~72 -> Area A, B。";
+    }
+});
+
     var table = new Tabulator("#example-table", {    
     dataTree: true,
     selectableRows:2,// 限制最多只能選取 2 行    
@@ -351,7 +459,7 @@
             let data = cell.getData();
             let cellValue = cell.getValue();                    
                     
-                if (data.NumericClass == "NUMERIC_IN_COBOL" || cellValue == "NUMERIC_EDITED") {
+                if (data.NumericClass == "NUMERIC_IN_COBOL" || data.NumericClass == "NUMERIC_EDITED") {
                      return `<span>${cellValue}</span>`;
                 }else //NON_NUMERIC
                 {
@@ -439,8 +547,18 @@ table.on("rowSelectionChanged", function(data, rows) {
     }
 
         function parseCobol() {
+    
+
     var content = document.getElementById("cobolInput").value;
-    fetch('/api/parseInDepth', {
+    var isFreeMode = document.getElementById("modeSwitch").checked;
+    // var modeValue = isFreeMode ? "Free" : "Standard";
+
+    table.setData([]);
+    // table.alert("解析中，請稍候...", "msg");
+
+    var apiAddress = isFreeMode ? "/api/parseInDepth" : "/api/parseInDepthStandardFormat";
+
+    fetch(apiAddress, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain' },
         body: content
@@ -450,10 +568,13 @@ table.on("rowSelectionChanged", function(data, rows) {
         if(res.success==true)
     {
         table.setData(res.data);
+        document.getElementById("selection-info").innerHTML = "選取兩個欄位以計算距離";   
+        // table.clearAlert();
     }        
     else
     {
-        document.getElementById("selection-info").innerHTML = res.error;        
+        document.getElementById("selection-info").innerHTML = res.error;
+        // table.clearAlert();
     }
         // expandAll();
     });

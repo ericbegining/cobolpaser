@@ -190,6 +190,22 @@ public class CobolController {
     }
     }    
 
+     @PostMapping(value="/parseInDepthStandardFormat")
+    public CopybookResponse parseInDepthStandardFormat(@RequestBody String content) {
+    try {
+        // 1. 根據字串選擇對應的 CblLineFormat
+            // Cb2xmlConstants.CblLineFormat format = Cb2xmlConstants CblLineFormat.valueOf(request.lineFormat.toUpperCase());
+
+        ICb2XmlBuilder cb2= Cb2Xml3.newBuilder(new StringReader(content), "temp");
+        cb2.setCobolLineFormat(Cb2xmlConstants.USE_STANDARD_COLUMNS);
+        ICopybook copybook =cb2.asCobolItemTree();        
+        return new CopybookResponse(true, buildTreeInDepth(copybook.getChildItems(),0));
+    } catch (Exception e) {
+        System.console().printf(e.getMessage());
+        return new CopybookResponse(false, "解析出錯: " + e.getMessage());
+    }
+    }        
+
 
     private List<Map<String, Object>> buildTreeInDepth(List<? extends IItem> items, int depth) {
     List<Map<String, Object>> tree = new ArrayList<>();
