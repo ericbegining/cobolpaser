@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>COBOL Structure & Memory Map</title>
     
-    <link href="https://unpkg.com/tabulator-tables@5.5.0/dist/css/tabulator_bootstrap5.min.css" rel="stylesheet">
-    <script src="https://unpkg.com/tabulator-tables@5.5.0/dist/js/tabulator.min.js"></script>
+    <link href="lib/tabulator.min.css" rel="stylesheet">
+    <script src="lib/tabulator.min.js"></script>
 
     <style>
         :root {
@@ -230,7 +230,7 @@
             
             // 水平位置 (X) & 寬度 (Width)
             // indent: 每一層深度向右縮 15px
-            const indent = item.Depth * 15;
+            const indent = item.Depth * 100;
             
             el.style.left = indent + "px";
             el.style.width = `calc(100% - ${indent + 10}px)`; // 右邊留一點空隙
@@ -238,7 +238,7 @@
             // 處理 Redefines (讓它再往右偏移一點，且浮在上面)
             if (item.isFieldRedefines) {
                 el.classList.add('lvl-redefine');
-                el.style.left = (indent + 10) + "px"; // 稍微錯開
+                el.style.left = (indent + 100) + "px"; // 稍微錯開
                 el.style.zIndex = item.Depth + 10;
             } else if (item.FieldName.includes("FILLER")) {
                 el.classList.add('lvl-filler');
