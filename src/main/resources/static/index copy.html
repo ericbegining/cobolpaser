@@ -8,7 +8,6 @@
     <style>
         :root {
             --sidebar-width: 380px;
-            --sidebar-right-width: 380px; 
             --primary-color: #2c3e50;
         }
 
@@ -38,32 +37,15 @@
             transition: margin-left 0.3s ease;
             display: flex; flex-direction: column;
         }
-        /* 右側側邊欄樣式 */
-        #sidebar-right {
-            width: var(--sidebar-right-width);
-            background: #f8f9fa;
-            border-left: 1px solid #dee2e6;
-            padding: 20px;
-            box-sizing: border-box;
-            transition: margin-right 0.3s ease;
-            display: flex; flex-direction: column;
-        }
-
-        /* 控制右側側邊欄收納的狀態類 */
-        .collapsed-right #sidebar-right {
-            margin-right: calc(var(--sidebar-right-width) * -1);
-        }
-
 
         /* 收納狀態 */
         .collapsed #sidebar {
             margin-left: calc(var(--sidebar-width) * -1);
         }
 
-   
+        /* 右側主區域 */
         #content {
             flex-grow: 1;
-            min-width: 0; /* 防止 Tabulator 撐破佈局 */
             padding: 20px;
             overflow: hidden;
             display: flex; flex-direction: column;
@@ -71,10 +53,6 @@
 
         /* 切換按鈕 */
         #toggle-btn {
-            cursor: pointer; background: #fff; border: 1px solid #ccc;
-            padding: 5px 10px; margin-bottom: 10px; align-self: flex-start;
-        }
-        #toggle-right-btn {
             cursor: pointer; background: #fff; border: 1px solid #ccc;
             padding: 5px 10px; margin-bottom: 10px; align-self: flex-start;
         }
@@ -283,87 +261,6 @@
             visibility: visible;
             opacity: 1;
         }
-
-        /* --- 右側欄位佈局調整 --- */
-        #sidebar-right {
-            display: flex;
-            flex-direction: column;
-            overflow: hidden; /* 防止捲軸出現在 sidebar 外部 */
-        }
-
-        /* 縮放控制列 */
-        .zoom-ctrl {
-            display: flex; align-items: center; gap: 5px; 
-            font-size: 12px; color: #555; background: #e9ecef; 
-            padding: 5px 10px; margin-bottom: 5px; border-radius: 4px;
-        }
-        .zoom-ctrl input { flex: 1; }
-
-        /* 捲動容器 */
-        .viz-scroller {
-            flex: 1; overflow-y: auto; display: flex; position: relative;
-            border: 1px solid #dee2e6; background: #fff;
-        }
-
-        /* 尺規樣式 */
-        .ruler-col { 
-            width: 35px; min-width: 35px; /* 固定寬度 */
-            background: #2d3436; color: #dfe6e9; 
-            border-right: 1px solid #636e72; 
-            position: sticky; left: 0; top: 0;
-            min-height: 100%; z-index: 1000; 
-        }
-        .tick { 
-            position: absolute; width: 100%; text-align: right; 
-            padding-right: 3px; font-size: 9px; 
-            border-bottom: 1px solid rgba(255,255,255,0.2); 
-            box-sizing: border-box; line-height: 0; 
-        }
-        .tick.major { border-bottom: 1px solid rgba(255,255,255,0.6); font-weight: bold; }
-
-        /* 記憶體區塊容器 */
-        .mem-container { 
-            flex: 1; position: relative; 
-            background-image: radial-gradient(#dee2e6 1px, transparent 1px); 
-            background-size: 20px 20px; 
-            overflow: hidden; /* 防止內容溢出 */
-        }
-
-        /* --- 記憶體區塊 (Block) --- */
-        .mem-block {
-            position: absolute; box-sizing: border-box;
-            border: 1px solid rgba(0,0,0,0.1); 
-            border-radius: 0 4px 4px 0;
-            font-size: 10px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
-            padding-left: 4px; display: flex; align-items: center;
-            cursor: pointer; background-color: white;
-            transition: background-color 0.1s;
-        }
-
-        /* Hover 效果：強調顯示並置頂 */
-        .mem-block:hover { 
-            outline: 2px solid #333; 
-            background-color: #fff !important; 
-            z-index: 9999 !important;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-        }
-
-        /* 區塊顏色主題 */
-        .lvl-group { background: #e3f2fd; border-left: 4px solid #1565c0; color: #0d47a1; }
-        .lvl-item { background: #e8f5e9; border-left: 4px solid #2e7d32; color: #1b5e20; }
-        .lvl-filler { background: #eceff1; border-left: 4px solid #607d8b; color: #546e7a; font-style: italic; }
-        .lvl-redefine { 
-            background: repeating-linear-gradient(45deg, #fff3e0, #fff3e0 10px, #ffe0b2 10px, #ffe0b2 20px); 
-            border-left: 4px solid #ef6c00; color: #e65100; 
-        }
-
-        /* Tooltip */
-        #tooltip {
-            position: fixed; display: none; background: rgba(33, 37, 41, 0.95); color: #fff;
-            padding: 8px; border-radius: 4px; font-size: 12px; pointer-events: none; z-index: 10000;
-            font-family: monospace; border: 1px solid #495057; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            max-width: 250px;
-        }
     </style>
 </head>
 <body>
@@ -404,34 +301,12 @@
     <main id="content">
         <div class="table-controls" style="margin-bottom: 10px; display: flex; gap: 10px;">
             <button id="toggle-btn" onclick="toggleSidebar()">☰ 收納/展開選單</button>
-            <button id="toggle-right-btn" onclick="toggleRightSidebar()">☰ 顯示/隱藏示意圖</button>
             <button class="btn-tool" onclick="expandAll()">📂 展開</button>
             <button class="btn-tool" onclick="collapseAll()">📁 收起</button>
-            
         </div>
         <div id="selection-info">選取兩個欄位以計算距離</div>        
         <div id="example-table"></div>
     </main>
-
-    <aside id="sidebar-right">
-        <h3>儲存空間示意圖</h3>
-            <div class="zoom-ctrl">
-            <span>🔎 Scale:</span>
-            <input type="range" id="zoomRange" min="1" max="10" step="0.5" value="3">
-            <span id="zoomVal">3px</span>
-        </div>
-
-        <div class="viz-scroller">
-            <div id="ruler" class="ruler-col"></div>
-            <div id="memContainer" class="mem-container">
-                <div style="padding:20px; text-align:center; color:#999; font-size:12px;">
-                    等待解析...
-                </div>
-            </div>
-        </div>
-    </aside>
-
-    <div id="tooltip"></div>
 </div>
 <div id="docModal" class="modal">
     <div class="modal-content">
@@ -441,33 +316,19 @@
             </div>
     </div>
 </div>
-
-
     <script>
-
-        let vizScale = 3;
-        let currentVizData = []; // 用於縮放時重繪
-        const tt = document.getElementById('tooltip');
-
-        // --- 註冊縮放事件 ---
-        document.getElementById('zoomRange').addEventListener('input', (e) => {
-            vizScale = parseFloat(e.target.value);
-            document.getElementById('zoomVal').innerText = vizScale + "px";
-            if(currentVizData.length > 0) renderVisualMap(currentVizData);
-        });
-
-            document.getElementById('modeSwitch').addEventListener('change', function() {
-            const label = document.getElementById('modeLabel');
-            const desc = document.getElementById('modeDescription');
-            
-            if(this.checked) {
-                label.innerText = "Free Mode";
-                desc.innerText = "Free Mode: 不限定欄位名稱一定要從第8欄開始；如果該行是Comment，*符號必須在該行其他文字的前面。";
-            } else {
-                label.innerText = "Standard Mode";
-                desc.innerText = "以 Cobol 欄位定義解析傳入的 Copybook；Column 7 -> Comments ; Column 8~72 -> Area A, B。";
-            }
-        });
+    document.getElementById('modeSwitch').addEventListener('change', function() {
+    const label = document.getElementById('modeLabel');
+    const desc = document.getElementById('modeDescription');
+    
+    if(this.checked) {
+        label.innerText = "Free Mode";
+        desc.innerText = "Free Mode: 不限定欄位名稱一定要從第8欄開始；如果該行是Comment，*符號必須在該行其他文字的前面。";
+    } else {
+        label.innerText = "Standard Mode";
+        desc.innerText = "以 Cobol 欄位定義解析傳入的 Copybook；Column 7 -> Comments ; Column 8~72 -> Area A, B。";
+    }
+});
 
     var table = new Tabulator("#example-table", {    
     dataTree: true,
@@ -688,51 +549,36 @@ table.on("rowSelectionChanged", function(data, rows) {
         function parseCobol() {
     
 
-            var content = document.getElementById("cobolInput").value;
-            var isFreeMode = document.getElementById("modeSwitch").checked;
+    var content = document.getElementById("cobolInput").value;
+    var isFreeMode = document.getElementById("modeSwitch").checked;
+    // var modeValue = isFreeMode ? "Free" : "Standard";
 
-            // 清空視覺化區塊
-            document.getElementById("memContainer").innerHTML = '<div style="padding:20px; text-align:center; color:#999; font-size:12px;">載入中...</div>';
-            // var modeValue = isFreeMode ? "Free" : "Standard";
+    table.setData([]);
+    // table.alert("解析中，請稍候...", "msg");
 
-            table.setData([]);
-            // table.alert("解析中，請稍候...", "msg");
+    var apiAddress = isFreeMode ? "/api/parseInDepth" : "/api/parseInDepthStandardFormat";
 
-            var apiAddress = isFreeMode ? "/api/parseInDepth" : "/api/parseInDepthStandardFormat";
-
-            fetch(apiAddress, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain' },
-                body: content
-            })
-            .then(response => response.json())
-            .then(res => {
-                if(res.success==true)
-            {
-                table.setData(res.data);
-                document.getElementById("selection-info").innerHTML = "選取兩個欄位以計算距離";   
-                // table.clearAlert();
-
-                // 處理視覺化地圖
-                let flatData = [];
-                flattenData(res.data, flatData);
-                currentVizData = flatData; // 儲存全域變數供縮放使用
-                renderVisualMap(flatData); // 繪製
-
-                // 如果右側欄位是收合的，可以考慮自動打開 (選配)
-                // if(document.getElementById("mainWrapper").classList.contains("collapsed-right")) {
-                //     toggleRightSidebar();
-                // }
-            }        
-            else
-            {
-                document.getElementById("selection-info").innerHTML = res.error;
-                document.getElementById("memContainer").innerHTML = '<div style="padding:20px; text-align:center; color:red;">解析失敗</div>';
-                // table.clearAlert();
-            }
-                // expandAll();
-            });
-        }
+    fetch(apiAddress, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: content
+    })
+    .then(response => response.json())
+    .then(res => {
+        if(res.success==true)
+    {
+        table.setData(res.data);
+        document.getElementById("selection-info").innerHTML = "選取兩個欄位以計算距離";   
+        // table.clearAlert();
+    }        
+    else
+    {
+        document.getElementById("selection-info").innerHTML = res.error;
+        // table.clearAlert();
+    }
+        // expandAll();
+    });
+}
 
 // 假設你的 Tabulator 變數名稱為 table
 
@@ -961,135 +807,6 @@ function calculateGap(selectedData) {
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
         }
-
-        // 控制右側側邊欄
-        function toggleRightSidebar() {
-            document.getElementById("mainWrapper").classList.toggle("collapsed-right");
-            
-            // 側邊欄變動時，表格需要適應新寬度
-            setTimeout(() => {
-                table.redraw(true);
-            }, 310);
-        }
-
-        function renderVisualMap(data) {
-            const container = document.getElementById('memContainer');
-            const ruler = document.getElementById('ruler');
-            container.innerHTML = "";
-            ruler.innerHTML = "";
-
-            if(!data || data.length === 0) return;
-
-            // 計算最大長度以設定高度
-            let maxLen = 0;
-            data.forEach(d => { if(d.EndPosition > maxLen) maxLen = d.EndPosition; });
-            
-            const totalHeight = (maxLen * vizScale) + 50; // 預留底部空間
-            container.style.height = totalHeight + "px";
-            ruler.style.height = totalHeight + "px";
-
-            // A. 繪製尺規
-            let step = vizScale < 2 ? 50 : 10; // 縮小的時候刻度變稀疏
-            for(let i=0; i<=maxLen; i+=step) {
-                const tick = document.createElement('div');
-                tick.className = 'tick ' + (i%(step*5)===0 ? 'major' : '');
-                tick.style.top = (i * vizScale) + "px";
-                tick.innerText = i;
-                ruler.appendChild(tick);
-            }
-
-            // B. 繪製區塊
-            data.forEach(item => {
-                const el = document.createElement('div');
-                el.className = 'mem-block';
-                
-                // 垂直位置與高度
-                el.style.top = (item.Position * vizScale) + "px";
-                const h = Math.max(item.TotalStorageLength * vizScale, 2); // 最小高度 2px
-                el.style.height = h + "px";
-                
-                // 水平縮排 (根據 Depth)                
-                const indentStep = 80; 
-                const indent = item.Depth * indentStep;
-                el.style.left = indent + "px";
-                el.style.width = `calc(100% - ${indent + 5}px)`;
-
-                // Z-Index 邏輯 (子層級在上方)
-                let baseZ = item.Depth * 10;
-
-                // 樣式判斷
-                if (item.isFieldRedefines) {
-                    el.classList.add('lvl-redefine');
-                    // Redefines 稍微往右縮一點以示區隔
-                    el.style.left = (indent + 50) + "px"; 
-                    el.style.zIndex = baseZ + 5; 
-                } else if (item.FieldName.includes("FILLER")) {
-                    el.classList.add('lvl-filler');
-                    el.style.zIndex = baseZ;
-                // } else if (item.children && item.children.length > 0) { // 注意: Tabulator 可能用 _children 或 children
-                //     el.classList.add('lvl-group');
-                //     el.style.zIndex = baseZ; 
-                } else if (item._children && item._children.length > 0) { // Tabulator 用 _children 或 children
-                    el.classList.add('lvl-group');
-                    el.style.zIndex = baseZ; 
-                } else {
-                    el.classList.add('lvl-item');
-                    el.style.zIndex = baseZ + 1; 
-                }
-
-                // 顯示文字 (高度足夠才顯示)
-                if (h > 10) {
-                        let txt;
-                    if (item._children && item._children.length > 0) {
-                             txt = `${item.FieldName}`;
-                        }else{
-                            txt = `${item.FieldName} (${item.Picture})`;
-                        }
-                    
-                    if(item.isFieldRedefines) txt += ` [R]`;
-                    el.innerText = txt;
-                }
-
-                // Tooltip 事件
-                el.onmousemove = (e) => showTooltip(e, item);
-                el.onmouseleave = hideTooltip;
-
-                container.appendChild(el);
-            });
-        }
-
-        // 扁平化資料結構 (將樹狀轉為陣列)
-        function flattenData(nodes, result) {
-            nodes.forEach(node => {
-                result.push(node);
-                //if (node._children && node._children.length > 0) flattenData(node._children, result);
-                // 相容 Tabulator 的 _children 或 children
-                let kids = node._children || node.children;
-                if (kids && kids.length > 0) flattenData(kids, result);
-            });
-        }
-
-        // Tooltip 顯示邏輯
-        function showTooltip(e, item) {
-            e.stopPropagation();
-            tt.style.display = 'block';
-            // 簡單防溢出處理
-            let left = e.clientX + 15;
-            if(left > window.innerWidth - 200) left = e.clientX - 210;
-            
-            tt.style.left = left + 'px';
-            tt.style.top = (e.clientY + 15) + 'px';
-            
-            tt.innerHTML = `
-                <div style="color:#aaa; border-bottom:1px solid #555; margin-bottom:4px;">${item.LevelString} ${item.FieldName}</div>
-                <div>Pos: <b style="color:#fff">${item.Position}</b> ~ ${item.EndPosition}</div>
-                <div>Len: <b style="color:#fff">${item.TotalStorageLength}</b></div>
-                <div>Pic: ${item.Picture || '-'}</div>
-                ${item.isFieldRedefines ? '<div style="color:#ff9800; margin-top:4px;">⚠ REDEFINES: '+item.RedefinesFieldName+'</div>' : ''}
-            `;
-        }
-
-        function hideTooltip() { tt.style.display = 'none'; }
     </script>
 </body>
 </html>

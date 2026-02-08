@@ -200,7 +200,7 @@
             el.style.height = h + "px";
             
             // 階梯式寬度與位置
-            const indent = item.Depth * 15;
+            const indent = item.Depth * 150;
             el.style.left = indent + "px";
             el.style.width = `calc(100% - ${indent + 10}px)`;
 
@@ -211,7 +211,7 @@
 
             if (item.isFieldRedefines) {
                 el.classList.add('lvl-redefine');
-                el.style.left = (indent + 20) + "px"; 
+                el.style.left = (indent + 150) + "px"; 
                 el.style.zIndex = baseZ + 5; // Redefines 稍微高一點
             } else if (item.FieldName.includes("FILLER")) {
                 el.classList.add('lvl-filler');
@@ -226,8 +226,12 @@
 
             // 內容文字
             if (h > 12) {
-                let txt = `${item.FieldName} (${item.TotalStorageLength})`;
-                if (item.isFieldRedefines) txt += ` [REDEFINES]`;
+                let txt = `${item.FieldName} (${item.TotalStorageLength}, ${item.Picture})`;
+                if (item.isFieldRedefines) 
+                    {
+                        txt += ` [REDEFINES]`;
+                        
+                    }
                 el.innerText = txt;
             }
 
