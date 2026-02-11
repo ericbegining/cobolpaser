@@ -44,10 +44,17 @@
 			<scope>test</scope>
 		</dependency>
 
-		<dependency>
+		<!-- <dependency>
 		<groupId>net.sf</groupId>
 		<artifactId>cb2xml</artifactId>
 		<version>1.01.09-LOCAL</version>
+		</dependency> -->
+		<dependency>
+        	<groupId>com.custom</groupId>  
+			<artifactId>cb2xml</artifactId> 
+			<version>1.01.09-LOCAL</version>        
+			<scope>system</scope>           
+			<systemPath>${project.basedir}/libs/cb2xml-1.01.09-LOCAL.jar</systemPath> 
 		</dependency>
 	</dependencies>
 
@@ -59,6 +66,9 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+                	<includeSystemScope>true</includeSystemScope>
+            	</configuration>
 			</plugin>
 		
 		</plugins>
