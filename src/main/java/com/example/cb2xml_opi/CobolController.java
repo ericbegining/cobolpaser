@@ -183,7 +183,7 @@ public class CobolController {
         ICb2XmlBuilder cb2= Cb2Xml3.newBuilder(new StringReader(content), "temp");
         cb2.setCobolLineFormat(Cb2xmlConstants.FREE_FORMAT);
         ICopybook copybook =cb2.asCobolItemTree();        
-        return new CopybookResponse(true, buildTreeInDepth(copybook.getChildItems(),0));
+        return new CopybookResponse(true, buildTreeInDepthWithOccurs(copybook.getChildItems(),0,0,""));
     } catch (Exception e) {
         System.console().printf(e.getMessage());
         return new CopybookResponse(false, "解析出錯: " + e.getMessage());
@@ -199,14 +199,150 @@ public class CobolController {
         ICb2XmlBuilder cb2= Cb2Xml3.newBuilder(new StringReader(content), "temp");
         cb2.setCobolLineFormat(Cb2xmlConstants.USE_STANDARD_COLUMNS);
         ICopybook copybook =cb2.asCobolItemTree();        
-        return new CopybookResponse(true, buildTreeInDepth(copybook.getChildItems(),0));
+        return new CopybookResponse(true, buildTreeInDepthWithOccurs(copybook.getChildItems(),0,0,""));
     } catch (Exception e) {
         System.console().printf(e.getMessage());
         return new CopybookResponse(false, "解析出錯: " + e.getMessage());
     }
     }        
 
+    private List<Map<String, Object>> buildTreeInDepthWithOccurs(List<? extends IItem> items, int depth, int parentOffsetShift, String parentIndexSuffix) 
+    {
+        List<Map<String, Object>> tree = new ArrayList<>();
+        if(items==null) return tree;
 
+        for (IItem item : items) {
+
+            // 1. 決定重複次數 (OCCURS)，若無則為 1
+            int occursCount = Math.max(1, item.getOccurs());
+
+            // 2. 取得單一項目的存儲長度 (用於計算展開後的位移)
+            int singleLength = item.getStorageLength();
+
+                for (int i = 0; i < occursCount; i++) {
+
+                    // 3. 計算當前索引產生的位移
+                    // 公式：父層累積位移 + (當前索引 * 單一項目長度)
+                    int currentShift = parentOffsetShift + (i * singleLength);
+                    String currentIndexSuffix;
+
+                    // --- 名稱處理邏輯 ---
+                    // 優先順序：
+                    // A. 如果我自己有 OCCURS -> 使用我的索引 (i)
+                    // B. 如果我沒有 OCCURS，但父層有 -> 繼承父層的索引 (indexSuffix)
+                    
+                    
+                    
+
+                    if (item.getOccurs() > 1) {
+                        // 情境 A: 我自己是陣列 (例如 FS14-15 OCCURS 10)
+                        // 邏輯: 繼承父層的後綴 + 我自己的索引
+                        // 結果: "(0)" + "(2)" -> "(0)(2)"
+                        int currentOccurIndex= i + 1;                        
+                        currentIndexSuffix = parentIndexSuffix + "(" + currentOccurIndex + ")";
+                    } else {
+                        // 情境 B: 我只是普通欄位 (例如 FS14)
+                        // 邏輯: 直接繼承父層的完整後綴
+                        // 結果: "(0)(2)" -> "(0)(2)"
+                        currentIndexSuffix = parentIndexSuffix;
+                    }
+
+                    // 設定顯示名稱                    
+                    String displayName = item.getFieldName();
+                    
+                    // 排除 FILLER 
+                    if (!displayName.toUpperCase().contains("FILLER")) {
+                        displayName += currentIndexSuffix;
+                    }                    
+                    
+
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    row.put("LevelString", item.getLevelString());
+                    row.put("LevelNumber", item.getLevelNumber());
+                    //row.put("FieldName", item.getFieldName());
+                    row.put("FieldName", displayName);
+
+                    row.put("Position", item.getPosition()+ currentShift);      
+                    row.put("EndPosition", item.getPosition() + currentShift + singleLength - 1);
+
+                    // if (item.getOccurs() > 0){
+                    //     row.put("EndPosition", item.getPosition()+item.getStorageLength()*item.getOccurs()-1);
+                    // }
+                    // else{
+                    //     row.put("EndPosition", item.getPosition()+item.getStorageLength()-1);
+                    // }
+
+                    row.put("StorageLength", item.getStorageLength());
+
+                    // if (item.getOccurs() > 0){
+                    //     row.put("TotalStorageLength", item.getStorageLength()*item.getOccurs());
+                    // }
+                    // else{
+                    //     row.put("TotalStorageLength", item.getStorageLength());
+                    // }
+                    row.put("TotalStorageLength", singleLength);
+
+                    row.put("Picture", item.getPicture());
+
+                    row.put("NumericClass", item.getNumericClass());
+                    row.put("DependingOn", item.getDependingOn());
+                    row.put("DisplayLength", item.getDisplayLength());
+                    row.put("DisplayPosition", item.getDisplayPosition());
+
+                    row.put("Usage", item.getUsage());
+
+                    if (item.getOccurs() > 0){
+                        row.put("Occurs", item.getOccurs());
+                    }
+                    else{
+                        row.put("Occurs", -1);
+                    }
+
+                    if (item.getOccursMin() > 0){
+                        row.put("OccursMin", item.getOccursMin());
+                    }
+                    else{
+                        row.put("OccursMin", -1);
+                    }
+
+                    
+                    row.put("Justified", item.getJustified());
+                    
+                    
+                    row.put("RedefinesFieldName", item.getRedefinesFieldName());
+                    row.put("Scale", item.getScale());
+
+
+                    
+
+                    row.put("isSync", item.isSync());        
+                    
+
+                    row.put("Value", item.getValue());
+
+                    row.put("isFieldRedefined", item.isFieldRedefined());
+                    row.put("isFieldRedefines", item.isFieldRedefines());
+                    row.put("isInheritedUsage", item.isInheritedUsage());
+                    row.put("isBlankWhenZero", item.isBlankWhenZero());
+                    row.put("isBlankWhenZero", item.isBlankWhenZero());
+                    row.put("SignClause", item.getSignClause());        
+                    row.put("RelativeLevel", item.getRelativeLevel());
+                    row.put("Depth", depth);
+                    
+
+
+                    // 關鍵點：如果有子項目，遞迴放入 _children 欄位
+                    if (item.getChildItems() != null && !item.getChildItems().isEmpty()) {
+                        row.put("_children", buildTreeInDepthWithOccurs(item.getChildItems(),depth+1,currentShift, currentIndexSuffix));
+                        }
+                        tree.add(row);
+                }
+        }
+
+        return tree;
+
+    }    
+    
     private List<Map<String, Object>> buildTreeInDepth(List<? extends IItem> items, int depth) {
     List<Map<String, Object>> tree = new ArrayList<>();
     for (IItem item : items) {
