@@ -4,14 +4,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>COBOL Visual Diff</title>
+    <title>COBOL Multi-Structure Diff</title>
     <style>
         :root {
             --primary-col: #2c3e50;
             --bg-color: #f8f9fa;
             --ruler-w: 40px;
             --gap-w: 150px;
-            /* 中間差異區的寬度 */
+            /* Width of the diff zone */
             --scale: 3;
             --header-h: 38px;
         }
@@ -26,7 +26,7 @@
             overflow: hidden;
         }
 
-        /* 側邊欄 (輸入區) */
+        /* Sidebar (Listbox area) */
         .sidebar {
             width: 320px;
             background: #fff;
@@ -77,6 +77,48 @@
             outline: none;
         }
 
+        /* Listbox styles */
+        .list-group {
+            flex: 1;
+            overflow-y: auto;
+            border: 1px solid #adb5bd;
+            border-radius: 4px;
+            background: #fff;
+            padding: 0;
+            margin: 0;
+            list-style: none;
+        }
+
+        .list-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background 0.1s;
+        }
+
+        .list-item:hover {
+            background-color: #f1f3f5;
+        }
+
+        .list-item.active {
+            background-color: #0d6efd;
+            color: white;
+            border-color: #0d6efd;
+        }
+        
+        .list-item .subtitle {
+            font-size: 11px;
+            color: #666;
+            margin-top: 2px;
+            white-space: nowrap; 
+            overflow: hidden; 
+            text-overflow: ellipsis;
+        }
+        .list-item.active .subtitle {
+            color: #e0e0e0;
+        }
+
         .controls {
             display: flex;
             flex-direction: column;
@@ -99,7 +141,7 @@
             background: #0b5ed7;
         }
 
-        /* 主視圖 */
+        /* Main Viewport */
         .viewport {
             flex: 1;
             display: flex;
@@ -108,7 +150,7 @@
             background: #fff;
         }
 
-        /* 1. 尺規 */
+        /* 1. Ruler */
         .ruler {
             width: var(--ruler-w);
             background: #34495e;
@@ -137,7 +179,7 @@
             font-weight: bold;
         }
 
-        /* 2. 結構欄 (Column) */
+        /* 2. Structure Column */
         .col-container {
             flex: 1;
             position: relative;
@@ -160,13 +202,13 @@
             box-sizing: border-box;
         }
 
-        /* 背景網格 (仿 index.html) */
+        /* Background Grid */
         #colA, #colB {
             background-image: radial-gradient(#dee2e6 1px, transparent 1px);
             background-size: 20px 20px;
         }
 
-        /* 記憶體區塊 (Block) */
+        /* Memory Block */
         .block {
             position: absolute;
             box-sizing: border-box;
@@ -190,34 +232,13 @@
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
         }
 
-        /* 階層顏色與寬度控制 */
-        /* 越上層越寬，顏色越深，越下層越窄，顏色越淺 */
-        .lvl-group {
-            background: #e3f2fd;
-            border-left: 4px solid #1565c0;
-            color: #0d47a1;
-        }
+        /* Level Colors */
+        .lvl-group { background: #e3f2fd; border-left: 4px solid #1565c0; color: #0d47a1; }
+        .lvl-item { background: #e8f5e9; border-left: 4px solid #2e7d32; color: #1b5e20; }
+        .lvl-filler { background: #eceff1; border-left: 4px solid #607d8b; color: #546e7a; font-style: italic; }
+        .lvl-redefine { background: repeating-linear-gradient(45deg, #fff3e0, #fff3e0 10px, #ffe0b2 10px, #ffe0b2 20px); border-left: 4px solid #ef6c00; color: #e65100; }
 
-        .lvl-item {
-            background: #e8f5e9;
-            border-left: 4px solid #2e7d32;
-            color: #1b5e20;
-        }
-
-        .lvl-filler {
-            background: #eceff1;
-            border-left: 4px solid #607d8b;
-            color: #546e7a;
-            font-style: italic;
-        }
-
-        .lvl-redefine {
-            background: repeating-linear-gradient(45deg, #fff3e0, #fff3e0 10px, #ffe0b2 10px, #ffe0b2 20px);
-            border-left: 4px solid #ef6c00;
-            color: #e65100;
-        }
-
-        /* 3. 中間差異連線區 (SVG) */
+        /* 3. Diff Zone (SVG) */
         .diff-zone {
             width: var(--gap-w);
             flex-shrink: 0;
@@ -227,7 +248,7 @@
             overflow: visible;
         }
 
-        /* Headers for Ruler and Diff Zone to align with Columns */
+        /* Headers for Ruler and Diff Zone */
         .ruler-header {
             height: var(--header-h);
             position: sticky;
@@ -256,7 +277,7 @@
             overflow: visible;
         }
 
-        /* 連線樣式 */
+        /* Link Lines */
         .link-line {
             fill: none;
             stroke: #bdc3c7;
@@ -269,22 +290,9 @@
             stroke-dasharray: 4;
         }
 
-        /* 位移: 橘色虛線 */
         .link-line.diff-len {
             stroke: #e74c3c;
             stroke-width: 2;
-        }
-
-        /* 長度不同: 紅色實線 */
-
-        /* 差異標籤 (Badge) */
-        .diff-label {
-            font-size: 10px;
-            font-weight: bold;
-            fill: #fff;
-            rx: 4;
-            ry: 4;
-            filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
         }
 
         .diff-text {
@@ -317,17 +325,24 @@
 <body>
 
     <div class="sidebar">
-        <h2>COBOL Visual Diff</h2>
-        <div class="input-group">
-            <label>Copybook A (Base)</label>
-            <textarea id="txtA" placeholder="貼上 COBOL 代碼..."></textarea>
+        <h2>COBOL Multi-Diff</h2>
+        <div class="input-group" style="flex: 0 0 30%;">
+            <label>比較案例列表 (Test Cases)</label>
+            <ul id="caseList" class="list-group">
+                <li class="list-item" style="color:#999; text-align:center; padding:20px;">載入中...</li>
+            </ul>
         </div>
         <div class="input-group">
-            <label>Copybook B (Compare)</label>
-            <textarea id="txtB" placeholder="貼上 COBOL 代碼..."></textarea>
+            <label>Copybook A</label>
+            <textarea id="txtA" placeholder="輸入 COBOL 代碼..."></textarea>
+        </div>
+        <div class="input-group">
+            <label>Copybook B</label>
+            <textarea id="txtB" placeholder="輸入 COBOL 代碼..."></textarea>
         </div>
         <div class="controls">
-            <button class="btn" onclick="runCompare()">比對 (Visual Diff)</button>
+            <button class="btn" onclick="runManualCompare()">手動比對 (Manual Diff)</button>
+            <button class="btn" onclick="fetchTestCases()">重新載入列表</button>
             <div style="font-size:12px; color:#666; display: flex; align-items: center; justify-content: space-between;">
                 <span>🔎 Scale:</span>
                 <div style="display:flex; align-items:center;">
@@ -335,7 +350,6 @@
                     <span id="zoomVal">3px</span>
                 </div>
             </div>
-            <button class="btn" style="background:#6c757d" onclick="loadDemo()">載入範例</button>
         </div>
     </div>
 
@@ -366,10 +380,13 @@
     <div id="tooltip"></div>
 
     <script>
-        const API_URL = "http://localhost:8705/api/parseInDepth";
+        const API_PARSE_URL = "http://localhost:8705/api/parseInDepth";
+        const API_CASES_URL = "http://localhost:8705/api/getComparisonCases"; // 假設的 API
+        
         let scale = 3;
-        let dataMapA = {}, dataMapB = {}; // 用於快速查找比對
+        let dataMapA = {}, dataMapB = {};
         let listA = [], listB = [];
+        let casesData = []; // 儲存從 API 抓回來的案例
 
         document.getElementById('zoom').addEventListener('input', (e) => {
             scale = parseFloat(e.target.value);
@@ -377,15 +394,142 @@
             renderAll();
         });
 
-        async function runCompare() {
+        // 初始化
+        window.onload = function() {
+            fetchTestCases();
+        };
+
+        async function fetchTestCases() {
+            const listEl = document.getElementById('caseList');
+            listEl.innerHTML = '<li class="list-item" style="color:#999; text-align:center;">載入中...</li>';
+
+            try {
+                // 模擬 API 回傳 (如果真實 API 存在，請移除此模擬區塊並使用 fetch)
+                // const res = await fetch(API_CASES_URL);
+                // const data = await res.json();
+                
+                // --- 模擬資料開始 ---
+                await new Promise(r => setTimeout(r, 500)); // 假裝延遲
+                const data = [
+                    {
+                        id: 1,
+                        name: "MSG-HEADER 差異測試",
+                        desc: "ID 長度變更 (10->12)",
+                        codeA: `       01  MSG-HEADER.
+           05  MSG-ID        PIC X(10).
+           05  MSG-DATE      PIC 9(8).
+           05  MSG-BODY.
+               10  ACCT-NO   PIC 9(10).
+               10  AMOUNT    PIC 9(5)V99.`,
+                        codeB: `       01  MSG-HEADER.
+           05  MSG-ID        PIC X(12).
+           05  MSG-DATE      PIC 9(8).
+           05  MSG-BODY.
+               10  ACCT-NO   PIC 9(10).
+               10  AMOUNT    PIC 9(5)V99.`
+                    },
+                    {
+                        id: 2,
+                        name: "REC-FACTURE 複雜結構",
+                        desc: "包含 Redefines 與 Occurs",
+                        codeA: `       01  REC-FACTURE.
+           03  FS1                 PIC X.
+           03  FS2.
+               05  FS2A            PIC 9.
+               05  RFS2B           PIC X(8).
+               05  FS2B REDEFINES RFS2B  PIC 9(8).
+           03  FS3.
+               05  FS3A            PIC 9.
+               05  FS3B            PIC X(10).`,
+                        codeB: `       01  REC-FACTURE.
+           03  FS1                 PIC X.
+           03  FS2.
+               05  FS2A            PIC 9.
+               05  RFS2B           PIC X(8).
+               05  FS2B REDEFINES RFS2B  PIC 9(8).
+           03  FS3.
+               05  FS3A            PIC 9.
+               05  FS3B            PIC X(12).` // 差異
+                    },
+                    {
+                        id: 3,
+                        name: "完全相同測試",
+                        desc: "無差異",
+                        codeA: `01 TEST-REC. 05 FLD1 PIC X(10).`,
+                        codeB: `01 TEST-REC. 05 FLD1 PIC X(10).`
+                    }
+                ];
+                // --- 模擬資料結束 ---
+
+                casesData = data;
+                renderCaseList(data);
+
+                // 自動選擇第一個
+                if(data.length > 0) {
+                    selectCase(0);
+                }
+
+            } catch (e) {
+                console.error(e);
+                listEl.innerHTML = '<li class="list-item" style="color:red;">載入失敗</li>';
+            }
+        }
+
+        function renderCaseList(data) {
+            const listEl = document.getElementById('caseList');
+            listEl.innerHTML = "";
+            
+            data.forEach((item, index) => {
+                const li = document.createElement('li');
+                li.className = 'list-item';
+                li.innerHTML = `
+                    <div style="font-weight:bold;">${item.name}</div>
+                    <div class="subtitle">${item.desc || ''}</div>
+                `;
+                li.onclick = () => selectCase(index);
+                listEl.appendChild(li);
+            });
+        }
+
+        function selectCase(index) {
+            // UI Highlight
+            const listEl = document.getElementById('caseList');
+            Array.from(listEl.children).forEach((li, i) => {
+                if(i === index) li.classList.add('active');
+                else li.classList.remove('active');
+            });
+
+            const item = casesData[index];
+            if(item) {
+                // 填入 Textarea
+                document.getElementById('txtA').value = item.codeA;
+                document.getElementById('txtB').value = item.codeB;
+                runCompare(item.codeA, item.codeB);
+            }
+        }
+
+        function runManualCompare() {
             const tA = document.getElementById('txtA').value;
             const tB = document.getElementById('txtB').value;
-            if (!tA) return alert("請輸入 Copybook A");
+            runCompare(tA, tB);
+        }
+
+        async function runCompare(tA, tB) {
+            if (!tA) return;
+
+            // 清空畫面顯示載入中
+            document.getElementById('colA').innerHTML = '<div style="padding:10px; color:#999;">Parsing...</div>';
+            document.getElementById('colB').innerHTML = '<div style="padding:10px; color:#999;">Parsing...</div>';
+            document.getElementById('diffSvg').innerHTML = '';
 
             // 1. 解析
             const resA = await fetchParse(tA);
             const resB = tB ? await fetchParse(tB) : [];
-            if (!resA) return;
+            
+            if (!resA) {
+                 document.getElementById('colA').innerHTML = '<div style="padding:10px; color:red;">Parse Error</div>';
+                 return;
+            }
 
             // 2. 攤平資料以便渲染與比對 (保留階層資訊)
             listA = flatten(resA);
@@ -417,7 +561,7 @@
             renderLinks();
         }
 
-        // --- 核心繪圖邏輯 ---
+        // --- 核心繪圖邏輯 (同 index2) ---
         function renderBlocks(list, containerId) {
             const container = document.getElementById(containerId);
             container.innerHTML = "";
@@ -429,23 +573,22 @@
                 // 1. 位置與高度
                 el.style.top = (item.Position * scale) + "px";
                 const h = Math.max((item.TotalStorageLength * scale), 2);
-                el.style.height = h + "px"; // 最小 2px
+                el.style.height = h + "px"; 
 
-                // 2. 階梯式寬度 (Nested Width)
-                // 參考 index.html 的邏輯，但因為是雙欄比對，縮排稍微縮小一點 (例如 30px)
+                // 2. 階梯式寬度
                 const indentStep = 30; 
                 const indent = item.Depth * indentStep;
                 
                 el.style.left = indent + "px";
                 el.style.width = `calc(100% - ${indent + 5}px)`;
 
-                // Z-Index: 越深層顯示在越上面，但因為有縮排，父層還是看得到
+                // Z-Index
                 let baseZ = item.Depth * 10;
 
                 // 3. 樣式判定
                 if (item.isFieldRedefines) {
                     el.classList.add('lvl-redefine');
-                    el.style.left = (indent + 20) + "px"; // Redefines 稍微往右
+                    el.style.left = (indent + 20) + "px"; 
                     el.style.zIndex = baseZ + 5;
                 } else if (item.FieldName.includes("FILLER")) {
                     el.classList.add('lvl-filler');
@@ -459,7 +602,6 @@
                 }
 
                 // 4. 文字內容
-                // 如果高度太小，就不顯示文字，避免雜亂 (Tooltip 依然有)
                 if (h > 10) {
                     let txt;
                     if (item._children && item._children.length > 0) {
@@ -481,25 +623,17 @@
 
         function renderLinks() {
             const svg = document.getElementById('diffSvg');
-            svg.innerHTML = ""; // 清空
+            svg.innerHTML = ""; 
 
-            // 遍歷 A，如果在 B 也有，就畫線
             listA.forEach(itemA => {
-                // 忽略 Filler 和 Redefines (避免線條太亂)
                 if (itemA.FieldName.includes("FILLER")) return;
                 if (itemA.isFieldRedefines) return;
 
                 const itemB = dataMapB[itemA.FieldName];
                 if (itemB) {
-                    // 計算座標
-                    // A 的連接點: 右側中點
-                    // B 的連接點: 左側中點
-                    // SVG 寬度固定，y 座標依據 Position * scale
-
                     const yA = (itemA.Position * scale) + (itemA.TotalStorageLength * scale / 2);
                     const yB = (itemB.Position * scale) + (itemB.TotalStorageLength * scale / 2);
 
-                    // 差異判定
                     let status = "ok";
                     let diffText = "";
 
@@ -510,27 +644,23 @@
                         status = "diff-pos";
                     }
 
-                    // 顏色
                     let strokeColor = "#bdc3c7";
-                    if (status === "diff-len") strokeColor = "#e74c3c"; // 紅
-                    if (status === "diff-pos") strokeColor = "#f39c12"; // 橘
+                    if (status === "diff-len") strokeColor = "#e74c3c"; 
+                    if (status === "diff-pos") strokeColor = "#f39c12"; 
 
-                    // 畫線 (貝茲曲線)
-                    const svgW = 150; // var(--gap-w)
+                    const svgW = 150; 
                     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                    const d = `M 0 ${yA} C ${svgW / 2} ${yA}, ${svgW / 2} ${yB}, ${svgW} ${yB}`;
+                    const d = `M 0  C ${svgW / 2} , ${svgW / 2} ,  `;
 
                     path.setAttribute("d", d);
-                    path.setAttribute("class", `link-line ${status}`);
+                    path.setAttribute("class", `link-line `);
                     path.setAttribute("stroke", strokeColor);
                     svg.appendChild(path);
 
-                    // 如果有差異，畫標籤
                     if (diffText) {
                         const midX = svgW / 2;
                         const midY = (yA + yB) / 2;
 
-                        // 背景框
                         const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
                         rect.setAttribute("x", midX - 40);
                         rect.setAttribute("y", midY - 8);
@@ -539,7 +669,6 @@
                         rect.setAttribute("fill", "#c0392b");
                         rect.setAttribute("rx", 4);
 
-                        // 文字
                         const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
                         text.setAttribute("x", midX);
                         text.setAttribute("y", midY);
@@ -569,10 +698,9 @@
             }
         }
 
-        // 輔助：遞迴轉平坦陣列
         function flatten(nodes, depth = 0, res = []) {
             nodes.forEach(node => {
-                node.Depth = depth; // 確保有深度資訊
+                node.Depth = depth; 
                 res.push(node);
                 if (node._children && node._children.length > 0) {
                     flatten(node._children, depth + 1, res);
@@ -583,7 +711,7 @@
 
         async function fetchParse(txt) {
             try {
-                const r = await fetch(API_URL, {
+                const r = await fetch(API_PARSE_URL, {
                     method: "POST", headers: { "Content-Type": "text/plain" }, body: txt
                 });
                 const j = await r.json();
@@ -591,12 +719,10 @@
             } catch (e) { console.error(e); return null; }
         }
 
-        // Tooltip
         const tt = document.getElementById('tooltip');
         function showTooltip(e, item) {
             e.stopPropagation();
             tt.style.display = 'block';
-            // 簡單防溢出處理
             let left = e.clientX + 15;
             if(left > window.innerWidth - 200) left = e.clientX - 210;
 
@@ -611,23 +737,6 @@
             `;
         }
         function hideTooltip() { tt.style.display = 'none'; }
-
-        function loadDemo() {
-            document.getElementById('txtA').value = `       01  MSG-HEADER.
-           05  MSG-ID        PIC X(10).
-           05  MSG-DATE      PIC 9(8).
-           05  MSG-BODY.
-               10  ACCT-NO   PIC 9(10).
-               10  AMOUNT    PIC 9(5)V99.`;
-            document.getElementById('txtB').value = `       01  MSG-HEADER.
-           05  MSG-ID        PIC X(12).
-           05  MSG-DATE      PIC 9(8).
-           05  MSG-BODY.
-               10  ACCT-NO   PIC 9(10).
-               10  AMOUNT    PIC 9(5)V99.`;
-            runCompare();
-        }
     </script>
 </body>
-
 </html>
